@@ -1,0 +1,62 @@
+Photo mode for solo play and Psykhanium: freeze time, slow-mo, hide HUD/arms, camera lens controls, and studio lights.
+
+Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide's Video options for depth of field to work.
+
+[b]Options:[/b]
+
+[b]Time Control[/b]
+- Freeze Time
+- Freeze Time (Hotkey)
+- Step 1 Frame (Hotkey)
+- Slow Motion
+- Slow-Mo (Hotkey)
+- Speed Up Slow-Mo (Hotkey)
+- Slow Down Slow-Mo (Hotkey)
+- Slow-Mo Speed
+
+[b]HUD & Visibility[/b]
+- Hide HUD
+- Hide HUD (Hotkey)
+- Hide Chat
+- Hide Chat (Hotkey)
+- Hide Arms & Weapons
+- Hide Arms (Hotkey)
+
+[b]Lens Zoom / FOV[/b]
+- Zoom In (Hotkey)
+- Zoom Out (Hotkey)
+- Reset FOV (Hotkey)
+- Camera FOV
+
+[b]Dutch Angle / Tilt[/b]
+- Tilt Left (Hotkey)
+- Tilt Right (Hotkey)
+- Reset Tilt (Hotkey)
+- Camera Tilt
+
+[b]Depth of Field (DOF)[/b]
+- Depth of Field
+- Depth of Field (Hotkey)
+- Focus Further (Hotkey)
+- Focus Closer (Hotkey)
+- Focus Distance
+- Focus Region
+- Blur Amount
+
+[b]Lighting Controls[/b]
+- Place Light (Hotkey)
+- Undo Light (Hotkey)
+- Clear All Lights (Hotkey)
+- Lantern Light
+- Lantern (Hotkey)
+
+[b]Light Properties[/b]
+- Light Type [Spotlight, Omni]
+- Light Color
+- Light Brightness
+- Light Distance
+- Spotlight Angle
+- Cast Shadows
+
+[b]Links:[/b]
+[url=https://github.com/MaddyMarv/Photo-mode]Source Code[/url] | [url=https://www.nexusmods.com/profile/indicabunny]Nexus Mods Profile[/url] | [url=https://ko-fi.com/indicabunny]Support Me on Ko-fi[/url]
