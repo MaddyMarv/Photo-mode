@@ -1,5 +1,6 @@
 local mod = get_mod("photo_mode")
 
+local ScriptViewport = require("scripts/foundation/utilities/script_viewport")
 local ScriptWorld = require("scripts/foundation/utilities/script_world")
 
 mod._time_frozen = false
@@ -31,6 +32,20 @@ local function _get_level_world()
 end
 
 local function _get_camera_transform()
+	local world = _get_level_world()
+
+	if world then
+		local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+
+		if ff_viewport then
+			local cam = ScriptViewport.camera(ff_viewport)
+
+			if cam then
+				return Camera.world_position(cam), Camera.world_rotation(cam)
+			end
+		end
+	end
+
 	local player_manager = Managers.player
 	local player = player_manager and player_manager:local_player(1)
 
@@ -54,6 +69,20 @@ end
 local function _get_current_fov()
 	if mod._fov_override then
 		return mod._fov_override
+	end
+
+	local world = _get_level_world()
+
+	if world then
+		local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+
+		if ff_viewport then
+			local cam = ScriptViewport.camera(ff_viewport)
+
+			if cam then
+				return math.floor(math.deg(Camera.vertical_fov(cam)) + 0.5)
+			end
+		end
 	end
 
 	local player_manager = Managers.player
@@ -412,6 +441,21 @@ mod.reset_fov = function()
 	end
 
 	mod._fov_override = nil
+
+	local world = _get_level_world()
+
+	if world then
+		local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+
+		if ff_viewport then
+			local cam = ScriptViewport.camera(ff_viewport)
+
+			if cam then
+				Camera.set_vertical_fov(cam, math.rad(65))
+			end
+		end
+	end
+
 	mod:echo(mod:localize("msg_fov_reset"))
 end
 
@@ -623,6 +667,22 @@ mod.update = function(dt)
 			else
 				Unit.set_local_position(mod._lantern_unit, 1, pos)
 				Unit.set_local_rotation(mod._lantern_unit, 1, rot)
+			end
+		end
+	end
+
+	if mod._fov_override then
+		local world = _get_level_world()
+
+		if world then
+			local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+
+			if ff_viewport then
+				local cam = ScriptViewport.camera(ff_viewport)
+
+				if cam then
+					Camera.set_vertical_fov(cam, math.rad(mod._fov_override))
+				end
 			end
 		end
 	end

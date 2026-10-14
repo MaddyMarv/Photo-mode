@@ -1,6 +1,17 @@
 {
-  "name": "Photo Mode",
-  "description": "Photo mode for solo play and Psykhanium: freeze time, slow-mo, hide HUD/arms, FOV/tilt/DOF, and placeable lights.",
-  "version": "1.0.0",
-  "author": "IndicaBunny"
+    "name": "Photo Mode",
+    "author": "IndicaBunny",
+    "version": "1.0",
+    "homepage": "https://www.nexusmods.com/games/warhammer40kdarktide/mods/1461",
+    "source": "https://github.com/MaddyMarv/Photo-mode",
+    "funding": {
+        "kofi": "https://ko-fi.com/indicabunny"
+    },
+    "description": "Photo mode for solo play and Psykhanium: freeze time, slow-mo, hide HUD/arms, camera lens controls, and studio lights.",
+    "dependencies": {
+        "required": [],
+        "self_after": [],
+        "self_before": []
+    },
+    "localization": {}
 }
