@@ -4,6 +4,10 @@ Photo mode for solo play and Psykhanium: freeze time, slow-mo, hide HUD/arms, ca
 
 Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide's Video options for depth of field to work.
 
+**Recommended Mods:**
+- [Camera Freeflight](https://www.nexusmods.com/warhammer40kdarktide/mods/32) - Fly the camera around freely to frame your shots from any angle.
+- [Transparent Mod Settings](https://www.nexusmods.com/warhammer40kdarktide/mods/1205) - Lets you see through the mod menu while adjusting lighting and camera settings live.
+
 **Options:**
 
 **Time Control**
