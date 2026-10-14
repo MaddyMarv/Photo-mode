@@ -35,6 +35,13 @@ mod._dolly_rot = nil
 mod._dolly_dists = nil
 mod._dolly_total_dist = 0
 
+mod._orbit_active = false
+mod._orbit_pos = nil
+mod._orbit_rot = nil
+mod._orbit_center = nil
+mod._orbit_angle = 0
+mod._orbit_height = 0
+
 local HUD_VISIBILITY_GROUP = "photo_mode_hide_hud"
 
 local function _get_level_world()
@@ -52,6 +59,10 @@ local function _get_camera_transform()
 
 	if mod._dolly_active and mod._dolly_pos and mod._dolly_rot then
 		return mod._dolly_pos:unbox(), mod._dolly_rot:unbox()
+	end
+
+	if mod._orbit_active and mod._orbit_pos and mod._orbit_rot then
+		return mod._orbit_pos:unbox(), mod._orbit_rot:unbox()
 	end
 
 	local world = _get_level_world()
@@ -283,6 +294,14 @@ local function _cleanup_all()
 	mod:set("lantern_active", false)
 	mod:set("tripod_active", false)
 	mod:set("dolly_active", false)
+	mod:set("orbit_active", false)
+
+	mod._orbit_active = false
+	mod._orbit_pos = nil
+	mod._orbit_rot = nil
+	mod._orbit_center = nil
+	mod._orbit_angle = 0
+	mod._orbit_height = 0
 end
 
 mod.set_freeze_time = function(enabled)
@@ -560,6 +579,13 @@ mod.set_tripod_active = function(enabled)
 	end
 
 	if enabled then
+		if mod._dolly_active then
+			mod.set_dolly_active(false)
+		end
+		if mod._orbit_active then
+			mod.set_orbit_active(false)
+		end
+
 		local pos, rot = _get_camera_transform()
 
 		if not pos or not rot then
@@ -662,6 +688,13 @@ mod.set_dolly_active = function(enabled)
 	end
 
 	if enabled then
+		if mod._tripod_active then
+			mod.set_tripod_active(false)
+		end
+		if mod._orbit_active then
+			mod.set_orbit_active(false)
+		end
+
 		local count = #mod._dolly_points
 
 		if count < 2 then
@@ -696,6 +729,141 @@ end
 
 mod.toggle_dolly = function()
 	mod.set_dolly_active(not mod._dolly_active)
+end
+
+local function _get_orbit_center()
+	local target_mode = mod:get("orbit_target_mode") or "character"
+
+	if target_mode == "character" then
+		local player = Managers.player and Managers.player:local_player(1)
+		local unit = player and player.player_unit
+		if unit and Unit.alive(unit) then
+			return Unit.world_position(unit, 1) + Vector3(0, 0, 1.1)
+		end
+	end
+
+	if mod._orbit_center then
+		return mod._orbit_center:unbox()
+	end
+
+	local player = Managers.player and Managers.player:local_player(1)
+	local unit = player and player.player_unit
+	if unit and Unit.alive(unit) then
+		return Unit.world_position(unit, 1) + Vector3(0, 0, 1.1)
+	end
+
+	local pos, rot = _get_camera_transform()
+	if pos and rot then
+		return pos + Quaternion.forward(rot) * (mod:get("orbit_radius") or 4.0)
+	end
+
+	return nil
+end
+
+mod.orbit_set_center = function()
+	if not mod:is_enabled() then
+		return
+	end
+
+	local pos, rot = _get_camera_transform()
+
+	if not pos or not rot then
+		return
+	end
+
+	local world = _get_level_world()
+	local center = nil
+
+	if world then
+		local physics_world = World.physics_world(world)
+		if physics_world then
+			local fwd = Quaternion.forward(rot)
+			local hit, hit_pos = PhysicsWorld.raycast(physics_world, pos, fwd, 50, "closest", "types", "both")
+			if hit then
+				center = hit_pos
+			end
+		end
+	end
+
+	if not center then
+		local player = Managers.player and Managers.player:local_player(1)
+		local unit = player and player.player_unit
+		if unit and Unit.alive(unit) then
+			center = Unit.world_position(unit, 1) + Vector3(0, 0, 1.1)
+		else
+			center = pos + Quaternion.forward(rot) * (mod:get("orbit_radius") or 4.0)
+		end
+	end
+
+	mod._orbit_center = Vector3Box(center)
+	mod:set("orbit_target_mode", "custom")
+
+	local offset = pos - center
+	local r = math.sqrt(offset.x * offset.x + offset.y * offset.y)
+
+	if r >= 1.5 then
+		mod:set("orbit_radius", math.floor(r * 10 + 0.5) / 10)
+		mod:set("orbit_height", math.floor(offset.z * 10 + 0.5) / 10)
+		mod._orbit_angle = math.atan2(offset.y, offset.x)
+	else
+		mod._orbit_angle = 0
+	end
+
+	mod:echo(mod:localize("msg_orbit_center_set"))
+end
+
+mod.set_orbit_active = function(enabled)
+	if not mod:is_enabled() then
+		return
+	end
+
+	if enabled then
+		if mod._tripod_active then
+			mod.set_tripod_active(false)
+		end
+		if mod._dolly_active then
+			mod.set_dolly_active(false)
+		end
+
+		local center = _get_orbit_center()
+
+		if not center then
+			mod:echo(mod:localize("msg_orbit_no_center"))
+			mod:set("orbit_active", false)
+			return
+		end
+
+		if not mod._orbit_center then
+			mod._orbit_center = Vector3Box(center)
+		end
+
+		local pos, rot = _get_camera_transform()
+		if pos and rot then
+			local offset = pos - center
+			local r = math.sqrt(offset.x * offset.x + offset.y * offset.y)
+			if r >= 1.5 then
+				mod._orbit_angle = math.atan2(offset.y, offset.x)
+			else
+				mod._orbit_angle = 0
+			end
+			mod._orbit_pos = Vector3Box(pos)
+			mod._orbit_rot = QuaternionBox(rot)
+		end
+
+		mod._orbit_active = true
+		mod:set("orbit_active", true)
+		mod:echo(mod:localize("msg_orbit_started"))
+	else
+		mod._orbit_active = false
+		mod._orbit_pos = nil
+		mod._orbit_rot = nil
+		mod:set("orbit_active", false)
+		mod:echo(mod:localize("msg_orbit_stopped"))
+	end
+end
+
+mod.toggle_orbit = function()
+	mod.set_orbit_active(not mod._orbit_active)
 end
 
 mod.set_dof_active = function(enabled)
@@ -954,6 +1122,50 @@ mod.update = function(dt)
 		end
 	end
 
+	if mod._orbit_active then
+		local center = _get_orbit_center()
+
+		if center then
+			local speed = mod:get("orbit_speed") or 15.0
+			local dir = (mod:get("orbit_direction") == "ccw") and 1 or -1
+			local d_angle = math.rad(speed) * dir * dt
+			mod._orbit_angle = ((mod._orbit_angle or 0) + d_angle) % (2 * math.pi)
+
+			local radius = mod:get("orbit_radius") or 4.0
+			local height = mod:get("orbit_height") or 0.3
+			local facing = mod:get("orbit_facing") or "inward"
+
+			local new_x = center.x + radius * math.cos(mod._orbit_angle)
+			local new_y = center.y + radius * math.sin(mod._orbit_angle)
+			local new_z = center.z + height
+
+			local new_pos = Vector3(new_x, new_y, new_z)
+			local look_dir
+
+			if facing == "outward" then
+				look_dir = Vector3.normalize(new_pos - center)
+			else
+				look_dir = Vector3.normalize(center - new_pos)
+			end
+
+			local up = (math.abs(look_dir.z) > 0.99) and Vector3.forward() or Vector3.up()
+			local new_rot = Quaternion.look(look_dir, up)
+
+			if mod._tilt_angle and mod._tilt_angle ~= 0 then
+				local roll_offset = Quaternion.from_yaw_pitch_roll(0, 0, math.rad(mod._tilt_angle))
+				new_rot = Quaternion.multiply(new_rot, roll_offset)
+			end
+
+			if not mod._orbit_pos then
+				mod._orbit_pos = Vector3Box(new_pos)
+				mod._orbit_rot = QuaternionBox(new_rot)
+			else
+				mod._orbit_pos:store(new_pos)
+				mod._orbit_rot:store(new_rot)
+			end
+		end
+	end
+
 	if mod._fov_override then
 		local world = _get_level_world()
 
@@ -1006,6 +1218,9 @@ mod:hook("CameraManager", "_update_camera_properties", function(func, self, came
 		elseif mod._dolly_active and mod._dolly_pos and mod._dolly_rot then
 			camera_data.position = mod._dolly_pos:unbox()
 			camera_data.rotation = mod._dolly_rot:unbox()
+		elseif mod._orbit_active and mod._orbit_pos and mod._orbit_rot then
+			camera_data.position = mod._orbit_pos:unbox()
+			camera_data.rotation = mod._orbit_rot:unbox()
 		elseif mod._tilt_angle and mod._tilt_angle ~= 0 and camera_data.rotation then
 			local roll_offset = Quaternion.from_yaw_pitch_roll(0, 0, math.rad(mod._tilt_angle))
 			camera_data.rotation = Quaternion.multiply(camera_data.rotation, roll_offset)
@@ -1069,6 +1284,9 @@ mod:hook_safe("FreeFlightManager", "_update_camera", function(self, input, dt, c
 		elseif mod._dolly_active and mod._dolly_pos and mod._dolly_rot then
 			pos = mod._dolly_pos:unbox()
 			rot = mod._dolly_rot:unbox()
+		elseif mod._orbit_active and mod._orbit_pos and mod._orbit_rot then
+			pos = mod._orbit_pos:unbox()
+			rot = mod._orbit_rot:unbox()
 		end
 
 		if pos and rot then
@@ -1077,6 +1295,8 @@ mod:hook_safe("FreeFlightManager", "_update_camera", function(self, input, dt, c
 			local cam = camera_data.frustum_freeze_camera or (viewport and ScriptViewport.camera(viewport))
 
 			if cam then
+				local pose = Matrix4x4.from_quaternion_position(rot, pos)
+				ScriptCamera.set_local_pose(cam, pose)
 				ScriptCamera.set_local_position(cam, pos)
 				ScriptCamera.set_local_rotation(cam, rot)
 			end
@@ -1191,6 +1411,11 @@ mod.on_setting_changed = function(setting_id)
 		if val ~= mod._dolly_active then
 			mod.set_dolly_active(val)
 		end
+	elseif setting_id == "orbit_active" then
+		local val = mod:get("orbit_active")
+		if val ~= mod._orbit_active then
+			mod.set_orbit_active(val)
+		end
 	elseif setting_id == "slomo_scale" and mod._slomo_active and not mod._time_frozen then
 		local slomo_scale = mod:get("slomo_scale") or 0.10
 		_set_time_scale(slomo_scale)
@@ -1221,41 +1446,3 @@ end
 mod.on_unload = function(exit_game)
 	_cleanup_all()
 end
-
-mod:command("dolly", mod:localize("cmd_dolly_desc"), function(action, param)
-	local act = action and string.lower(action) or "help"
-
-	if act == "add" or act == "a" or act == "b" or act == "c" or act == "d" or act == "point" then
-		local custom_name = nil
-		if act ~= "add" and act ~= "point" then
-			custom_name = string.upper(act)
-		elseif param and param ~= "" then
-			custom_name = string.upper(param)
-		end
-		mod.dolly_add_point(custom_name)
-	elseif act == "clear" or act == "reset" then
-		mod.dolly_clear_points()
-	elseif act == "list" or act == "show" then
-		mod.dolly_list_points()
-	elseif act == "play" or act == "start" or act == "go" then
-		mod.set_dolly_active(true)
-	elseif act == "stop" or act == "pause" then
-		mod.set_dolly_active(false)
-	elseif act == "loop" then
-		local cur = mod:get("dolly_motion")
-		local new_motion = cur == "loop" and "smooth" or "loop"
-		mod:set("dolly_motion", new_motion)
-		mod:echo(mod:localize("msg_dolly_motion") .. ": " .. new_motion)
-	elseif act == "time" and param then
-		local num = tonumber(param)
-		if num and num > 0 then
-			mod:set("dolly_duration", num)
-			mod:echo(mod:localize("msg_dolly_duration") .. ": " .. tostring(num) .. "s")
-		end
-	else
-		mod:echo(mod:localize("msg_dolly_help_1"))
-		mod:echo(mod:localize("msg_dolly_help_2"))
-		mod:echo(mod:localize("msg_dolly_help_3"))
-		mod:echo(mod:localize("msg_dolly_help_4"))
-	end
-end)

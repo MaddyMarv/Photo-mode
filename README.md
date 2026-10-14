@@ -1,5 +1,4 @@
 ### [Photo Mode](https://www.nexusmods.com/games/warhammer40kdarktide/mods/1461)
-<img width="737" height="517" alt="image" src="https://github.com/user-attachments/assets/2f193769-b8ab-4127-a0ee-1ebbf4f14928" />
 
 Photo mode for solo play and Psykhanium: freeze time, slow-mo, hide HUD/arms, camera lens controls, and studio lights.
 
@@ -10,6 +9,7 @@ Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide
 - [Perspectives](https://www.nexusmods.com/warhammer40kdarktide/mods/111) - Third-person camera view for seeing your own character and camera angles.
 - [Disable Screen Effects](https://www.nexusmods.com/warhammer40kdarktide/mods/17) - Toggle off screen blood splatters, distortion, and damage overlays to keep your camera lens clear.
 - [Transparent Mod Settings](https://www.nexusmods.com/warhammer40kdarktide/mods/1205) - Lets you see through the mod menu while adjusting lighting and camera settings live.
+- [Immersive Evasion](https://www.nexusmods.com/warhammer40kdarktide/mods/345) - For cooler, more accurate sliding and dodging animations in third person.
 
 **Options:**
 
@@ -78,12 +78,14 @@ Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide
 - Clear Waypoints (Hotkey)
 - Dolly Duration (Seconds)
 - Dolly Motion [Smooth Ease, Linear, Ping-Pong Loop]
-
-**Commands:**
-- `/dolly add` (or `/dolly a`, `/dolly b`) - Save current camera as next waypoint
-- `/dolly play` / `/dolly stop` - Start or stop camera glide
-- `/dolly list` / `/dolly clear` - View or clear saved waypoints
-- `/dolly time <seconds>` - Set glide travel time
-- `/dolly loop` - Toggle ping-pong looping
+- Orbit Rig Toggle
+- Play/Stop Orbit (Hotkey)
+- Set Orbit Center (Hotkey)
+- Orbit Target [Your Character, Recorded Point]
+- Camera Facing [Inward, Outward]
+- Orbit Speed
+- Orbit Distance
+- Orbit Height Offset
+- Orbit Direction [Clockwise, Counter-Clockwise]
 
 🔗 **Links:** [Source Code](https://github.com/MaddyMarv/Photo-mode) | [Nexus Mods Profile](https://www.nexusmods.com/profile/indicabunny) | [Support Me on Ko-fi](https://ko-fi.com/indicabunny)

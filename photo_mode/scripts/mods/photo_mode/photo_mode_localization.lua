@@ -440,8 +440,92 @@ return {
 	dolly_motion_loop = {
 		en = "Ping-Pong Loop",
 	},
-	cmd_dolly_desc = {
-		en = "Controls multi-point camera dolly tracks.",
+	orbit_group = {
+		en = "Orbit Rig (Circular)",
+	},
+	orbit_active = {
+		en = "Orbit Rig",
+	},
+	orbit_active_description = {
+		en = "Circles camera continuously around a target center.",
+	},
+	toggle_orbit = {
+		en = "Play/Stop Orbit Keybind",
+	},
+	toggle_orbit_description = {
+		en = "Hotkey to start or stop orbit circling.",
+	},
+	orbit_set_center = {
+		en = "Set Orbit Center Keybind",
+	},
+	orbit_set_center_description = {
+		en = "Locks orbit pivot to the point you are looking at (or character).",
+	},
+	orbit_target_mode = {
+		en = "Orbit Target",
+	},
+	orbit_target_mode_description = {
+		en = "Choose whether to orbit your character or a custom recorded point.",
+	},
+	orbit_target_character = {
+		en = "Your Character",
+	},
+	orbit_target_custom = {
+		en = "Recorded Point",
+	},
+	orbit_facing = {
+		en = "Camera Facing",
+	},
+	orbit_facing_description = {
+		en = "Choose whether camera faces inward toward the subject or outward.",
+	},
+	orbit_facing_inward = {
+		en = "Inward (Subject)",
+	},
+	orbit_facing_outward = {
+		en = "Outward (Panorama)",
+	},
+	orbit_speed = {
+		en = "Orbit Speed",
+	},
+	orbit_speed_description = {
+		en = "Rotation speed in degrees per second.",
+	},
+	orbit_radius = {
+		en = "Orbit Distance",
+	},
+	orbit_radius_description = {
+		en = "Distance in meters from the orbit center.",
+	},
+	orbit_height = {
+		en = "Orbit Height Offset",
+	},
+	orbit_height_description = {
+		en = "Height offset above or below the center point in meters.",
+	},
+	orbit_direction = {
+		en = "Orbit Direction",
+	},
+	orbit_direction_description = {
+		en = "Rotation direction around the center.",
+	},
+	orbit_dir_cw = {
+		en = "Clockwise",
+	},
+	orbit_dir_ccw = {
+		en = "Counter-Clockwise",
+	},
+	msg_orbit_center_set = {
+		en = "Orbit: Pivot Center Locked",
+	},
+	msg_orbit_no_center = {
+		en = "Orbit: Target center needed first",
+	},
+	msg_orbit_started = {
+		en = "Orbit: Circling Target",
+	},
+	msg_orbit_stopped = {
+		en = "Orbit: Stopped",
 	},
 	msg_dolly_point_added = {
 		en = "Dolly: Waypoint Saved",
@@ -466,17 +550,5 @@ return {
 	},
 	msg_dolly_motion = {
 		en = "Dolly Motion",
-	},
-	msg_dolly_help_1 = {
-		en = "/dolly add (or /dolly a, b, c) - Save camera waypoint",
-	},
-	msg_dolly_help_2 = {
-		en = "/dolly play / /dolly stop - Start or stop camera glide",
-	},
-	msg_dolly_help_3 = {
-		en = "/dolly list / /dolly clear - View or clear waypoints",
-	},
-	msg_dolly_help_4 = {
-		en = "/dolly time <seconds> / /dolly loop - Change speed or loop",
 	},
 }
