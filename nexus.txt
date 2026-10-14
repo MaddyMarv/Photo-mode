@@ -4,6 +4,8 @@ Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide
 
 [b]Recommended Mods:[/b]
 - [url=https://www.nexusmods.com/warhammer40kdarktide/mods/32]Camera Freeflight[/url] - Fly the camera around freely to frame your shots from any angle.
+- [url=https://www.nexusmods.com/warhammer40kdarktide/mods/111]Perspectives[/url] - Third-person camera view for seeing your own character and camera angles.
+- [url=https://www.nexusmods.com/warhammer40kdarktide/mods/17]Disable Screen Effects[/url] - Toggle off screen blood splatters, distortion, and damage overlays to keep your camera lens clear.
 - [url=https://www.nexusmods.com/warhammer40kdarktide/mods/1205]Transparent Mod Settings[/url] - Lets you see through the mod menu while adjusting lighting and camera settings live.
 
 [b]Options:[/b]
@@ -25,6 +27,8 @@ Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide
 - Hide Chat (Hotkey)
 - Hide Arms & Weapons
 - Hide Arms (Hotkey)
+- Hide All Screen Effects
+- Hide Screen Effects (Hotkey)
 
 [b]Lens Zoom / FOV[/b]
 - Zoom In (Hotkey)
@@ -61,6 +65,23 @@ Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide
 - Light Distance
 - Spotlight Angle
 - Cast Shadows
+
+[b]Camera Rigs[/b]
+- Tripod Lock
+- Tripod (Hotkey)
+- Dolly Track Toggle
+- Play/Stop Dolly (Hotkey)
+- Add Waypoint (Hotkey)
+- Clear Waypoints (Hotkey)
+- Dolly Duration (Seconds)
+- Dolly Motion [Smooth Ease, Linear, Ping-Pong Loop]
+
+[b]Commands:[/b]
+- /dolly add (or /dolly a, /dolly b) - Save current camera as next waypoint
+- /dolly play / /dolly stop - Start or stop camera glide
+- /dolly list / /dolly clear - View or clear saved waypoints
+- /dolly time <seconds> - Set glide travel time
+- /dolly loop - Toggle ping-pong looping
 
 [b]Links:[/b]
 [url=https://github.com/MaddyMarv/Photo-mode]Source Code[/url] | [url=https://www.nexusmods.com/profile/indicabunny]Nexus Mods Profile[/url] | [url=https://ko-fi.com/indicabunny]Support Me on Ko-fi[/url]

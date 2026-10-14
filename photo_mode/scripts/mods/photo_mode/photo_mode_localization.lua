@@ -14,6 +14,9 @@ return {
 	tab_lighting = {
 		en = "Studio Lighting",
 	},
+	tab_rigs = {
+		en = "Camera Rigs",
+	},
 	time_settings = {
 		en = "Time Control",
 	},
@@ -136,6 +139,24 @@ return {
 	},
 	msg_arms_shown = {
 		en = "Arms & Weapon: Visible",
+	},
+	hide_screen_effects = {
+		en = "Hide All Screen Effects",
+	},
+	hide_screen_effects_description = {
+		en = "Disables all screen blood splatters, damage vignettes, suppression, peril heat, and fullscreen moods.",
+	},
+	toggle_hide_screen_effects = {
+		en = "Hide Screen Effects Keybind",
+	},
+	toggle_hide_screen_effects_description = {
+		en = "Hotkey to toggle all screen effects.",
+	},
+	msg_screen_effects_hidden = {
+		en = "Screen Effects: Hidden",
+	},
+	msg_screen_effects_shown = {
+		en = "Screen Effects: Visible",
 	},
 	fov_settings = {
 		en = "Lens Zoom / FOV",
@@ -349,5 +370,113 @@ return {
 	},
 	msg_lantern_off = {
 		en = "Camera Lantern: Inactive",
+	},
+	tripod_group = {
+		en = "Tripod Rig (Static)",
+	},
+	tripod_active = {
+		en = "Tripod Lock",
+	},
+	tripod_active_description = {
+		en = "Locks camera frozen in world space.",
+	},
+	toggle_tripod = {
+		en = "Tripod Keybind",
+	},
+	toggle_tripod_description = {
+		en = "Hotkey to lock/unlock camera in place.",
+	},
+	msg_tripod_on = {
+		en = "Tripod: Locked in Place",
+	},
+	msg_tripod_off = {
+		en = "Tripod: Unlocked",
+	},
+	dolly_group = {
+		en = "Dolly Track (Waypoints)",
+	},
+	dolly_active = {
+		en = "Dolly Track",
+	},
+	dolly_active_description = {
+		en = "Glides camera through waypoints.",
+	},
+	toggle_dolly = {
+		en = "Play/Stop Dolly Keybind",
+	},
+	toggle_dolly_description = {
+		en = "Hotkey to play or stop dolly track.",
+	},
+	dolly_add_point = {
+		en = "Add Waypoint Keybind",
+	},
+	dolly_add_point_description = {
+		en = "Adds current camera as next point (A, B, C...).",
+	},
+	dolly_clear_points = {
+		en = "Clear Waypoints Keybind",
+	},
+	dolly_clear_points_description = {
+		en = "Deletes all stored waypoints.",
+	},
+	dolly_duration = {
+		en = "Dolly Duration",
+	},
+	dolly_duration_description = {
+		en = "Total travel time in seconds.",
+	},
+	dolly_motion = {
+		en = "Dolly Motion",
+	},
+	dolly_motion_description = {
+		en = "Movement easing style.",
+	},
+	dolly_motion_smooth = {
+		en = "Smooth Ease",
+	},
+	dolly_motion_linear = {
+		en = "Linear",
+	},
+	dolly_motion_loop = {
+		en = "Ping-Pong Loop",
+	},
+	cmd_dolly_desc = {
+		en = "Controls multi-point camera dolly tracks.",
+	},
+	msg_dolly_point_added = {
+		en = "Dolly: Waypoint Saved",
+	},
+	msg_dolly_points_cleared = {
+		en = "Dolly: All Waypoints Cleared",
+	},
+	msg_dolly_started = {
+		en = "Dolly: Gliding Path",
+	},
+	msg_dolly_stopped = {
+		en = "Dolly: Stopped",
+	},
+	msg_dolly_missing_points = {
+		en = "Dolly: Need at least 2 points (A and B)",
+	},
+	msg_dolly_no_points = {
+		en = "Dolly: No waypoints saved",
+	},
+	msg_dolly_duration = {
+		en = "Dolly Duration",
+	},
+	msg_dolly_motion = {
+		en = "Dolly Motion",
+	},
+	msg_dolly_help_1 = {
+		en = "/dolly add (or /dolly a, b, c) - Save camera waypoint",
+	},
+	msg_dolly_help_2 = {
+		en = "/dolly play / /dolly stop - Start or stop camera glide",
+	},
+	msg_dolly_help_3 = {
+		en = "/dolly list / /dolly clear - View or clear waypoints",
+	},
+	msg_dolly_help_4 = {
+		en = "/dolly time <seconds> / /dolly loop - Change speed or loop",
 	},
 }

@@ -8,6 +8,7 @@ mod._slomo_active = false
 mod._hud_hidden = false
 mod._chat_hidden = false
 mod._arms_hidden = false
+mod._screen_effects_hidden = false
 mod._step_frames_remaining = nil
 
 mod._placed_lights = {}
@@ -21,6 +22,19 @@ mod._dof_distance = 3.0
 mod._dof_was_applied = false
 mod._original_render_dof = nil
 
+mod._tripod_active = false
+mod._tripod_pos = nil
+mod._tripod_rot = nil
+
+mod._dolly_points = {}
+mod._dolly_active = false
+mod._dolly_progress = 0
+mod._dolly_direction = 1
+mod._dolly_pos = nil
+mod._dolly_rot = nil
+mod._dolly_dists = nil
+mod._dolly_total_dist = 0
+
 local HUD_VISIBILITY_GROUP = "photo_mode_hide_hud"
 
 local function _get_level_world()
@@ -32,6 +46,14 @@ local function _get_level_world()
 end
 
 local function _get_camera_transform()
+	if mod._tripod_active and mod._tripod_pos and mod._tripod_rot then
+		return mod._tripod_pos:unbox(), mod._tripod_rot:unbox()
+	end
+
+	if mod._dolly_active and mod._dolly_pos and mod._dolly_rot then
+		return mod._dolly_pos:unbox(), mod._dolly_rot:unbox()
+	end
+
 	local world = _get_level_world()
 
 	if world then
@@ -202,6 +224,7 @@ end
 local function _reset_hud_state()
 	mod._hud_hidden = false
 	mod._chat_hidden = false
+	mod._screen_effects_hidden = false
 
 	if mod._arms_hidden then
 		local player = Managers.player and Managers.player:local_player(1)
@@ -233,15 +256,33 @@ local function _cleanup_all()
 	_reset_hud_state()
 	_reset_camera_state()
 	_destroy_lantern()
-	mod.clear_lights(true)
+	mod._silent_clear = true
+	mod.clear_lights()
+	mod._silent_clear = nil
+
+	mod._tripod_active = false
+	mod._tripod_pos = nil
+	mod._tripod_rot = nil
+
+	mod._dolly_active = false
+	mod._dolly_progress = 0
+	mod._dolly_direction = 1
+	mod._dolly_pos = nil
+	mod._dolly_rot = nil
+	mod._dolly_dists = nil
+	mod._dolly_total_dist = 0
+	table.clear(mod._dolly_points)
 
 	mod:set("freeze_time", false)
 	mod:set("slomo_active", false)
 	mod:set("hide_hud", false)
 	mod:set("hide_chat", false)
 	mod:set("hide_arms", false)
+	mod:set("hide_screen_effects", false)
 	mod:set("dof_active", false)
 	mod:set("lantern_active", false)
+	mod:set("tripod_active", false)
+	mod:set("dolly_active", false)
 end
 
 mod.set_freeze_time = function(enabled)
@@ -411,6 +452,33 @@ mod.toggle_hide_arms = function()
 	mod.set_hide_arms(not mod._arms_hidden)
 end
 
+mod.set_hide_screen_effects = function(enabled)
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._screen_effects_hidden = enabled
+	mod:set("hide_screen_effects", enabled)
+
+	if mod._screen_effects_hidden then
+		local player = Managers.player and Managers.player:local_player(1)
+		local unit = player and player.player_unit
+		local mood_extension = unit and ScriptUnit.has_extension(unit, "mood_system")
+
+		if mood_extension and mood_extension.remove_all_moods then
+			mood_extension:remove_all_moods()
+		end
+
+		mod:echo(mod:localize("msg_screen_effects_hidden"))
+	else
+		mod:echo(mod:localize("msg_screen_effects_shown"))
+	end
+end
+
+mod.toggle_hide_screen_effects = function()
+	mod.set_hide_screen_effects(not mod._screen_effects_hidden)
+end
+
 mod.zoom_in = function()
 	if not mod:is_enabled() then
 		return
@@ -484,6 +552,150 @@ mod.reset_tilt = function()
 
 	mod._tilt_angle = 0
 	mod:echo(mod:localize("msg_tilt_reset"))
+end
+
+mod.set_tripod_active = function(enabled)
+	if not mod:is_enabled() then
+		return
+	end
+
+	if enabled then
+		local pos, rot = _get_camera_transform()
+
+		if not pos or not rot then
+			mod:set("tripod_active", false)
+			return
+		end
+
+		mod._tripod_pos = Vector3Box(pos)
+		mod._tripod_rot = QuaternionBox(rot)
+		mod._tripod_active = true
+		mod:set("tripod_active", true)
+		mod:echo(mod:localize("msg_tripod_on"))
+	else
+		mod._tripod_active = false
+		mod._tripod_pos = nil
+		mod._tripod_rot = nil
+		mod:set("tripod_active", false)
+		mod:echo(mod:localize("msg_tripod_off"))
+	end
+end
+
+mod.toggle_tripod = function()
+	mod.set_tripod_active(not mod._tripod_active)
+end
+
+local function _calculate_dolly_distances()
+	local dists = {}
+	local total = 0
+	local count = #mod._dolly_points
+
+	for i = 1, count - 1 do
+		local p1 = mod._dolly_points[i].pos:unbox()
+		local p2 = mod._dolly_points[i + 1].pos:unbox()
+		local d = Vector3.length(p2 - p1)
+		dists[i] = d
+		total = total + d
+	end
+
+	return dists, total
+end
+
+mod.dolly_add_point = function(label)
+	if not mod:is_enabled() then
+		return
+	end
+
+	local pos, rot = _get_camera_transform()
+
+	if not pos or not rot then
+		return
+	end
+
+	local count = #mod._dolly_points
+	local default_label = count < 26 and string.char(65 + count) or tostring(count + 1)
+	local name = (type(label) == "string" and label ~= "") and label or default_label
+
+	table.insert(mod._dolly_points, {
+		name = tostring(name),
+		pos = Vector3Box(pos),
+		rot = QuaternionBox(rot),
+		fov = _get_current_fov(),
+	})
+
+	mod:echo(mod:localize("msg_dolly_point_added") .. ": Point " .. tostring(name) .. " (" .. tostring(#mod._dolly_points) .. " total)")
+end
+
+mod.dolly_clear_points = function()
+	if not mod:is_enabled() then
+		return
+	end
+
+	table.clear(mod._dolly_points)
+	mod.set_dolly_active(false)
+	mod:echo(mod:localize("msg_dolly_points_cleared"))
+end
+
+mod.dolly_list_points = function()
+	if not mod:is_enabled() then
+		return
+	end
+
+	local count = #mod._dolly_points
+
+	if count == 0 then
+		mod:echo(mod:localize("msg_dolly_no_points"))
+		return
+	end
+
+	local names = {}
+	for i = 1, count do
+		table.insert(names, "Point " .. tostring(mod._dolly_points[i].name))
+	end
+
+	mod:echo("Dolly (" .. tostring(count) .. "): " .. table.concat(names, ", "))
+end
+
+mod.set_dolly_active = function(enabled)
+	if not mod:is_enabled() then
+		return
+	end
+
+	if enabled then
+		local count = #mod._dolly_points
+
+		if count < 2 then
+			mod:echo(mod:localize("msg_dolly_missing_points"))
+			mod:set("dolly_active", false)
+			return
+		end
+
+		mod._dolly_dists, mod._dolly_total_dist = _calculate_dolly_distances()
+		mod._dolly_progress = 0
+		mod._dolly_direction = 1
+
+		local start_pt = mod._dolly_points[1]
+		mod._dolly_pos = Vector3Box(start_pt.pos:unbox())
+		mod._dolly_rot = QuaternionBox(start_pt.rot:unbox())
+
+		if start_pt.fov then
+			mod._fov_override = start_pt.fov
+		end
+
+		mod._dolly_active = true
+		mod:set("dolly_active", true)
+		mod:echo(mod:localize("msg_dolly_started"))
+	else
+		mod._dolly_active = false
+		mod._dolly_pos = nil
+		mod._dolly_rot = nil
+		mod:set("dolly_active", false)
+		mod:echo(mod:localize("msg_dolly_stopped"))
+	end
+end
+
+mod.toggle_dolly = function()
+	mod.set_dolly_active(not mod._dolly_active)
 end
 
 mod.set_dof_active = function(enabled)
@@ -599,7 +811,7 @@ mod.undo_light = function()
 	end
 end
 
-mod.clear_lights = function(silent)
+mod.clear_lights = function()
 	local world = _get_level_world()
 	local had_lights = #mod._placed_lights > 0
 
@@ -613,7 +825,7 @@ mod.clear_lights = function(silent)
 
 	table.clear(mod._placed_lights)
 
-	if not silent and had_lights then
+	if not mod._silent_clear and had_lights then
 		mod:echo(mod:localize("msg_lights_cleared"))
 	end
 end
@@ -671,6 +883,77 @@ mod.update = function(dt)
 		end
 	end
 
+	if mod._dolly_active and mod._dolly_points and #mod._dolly_points >= 2 and mod._dolly_pos and mod._dolly_rot then
+		local duration = mod:get("dolly_duration") or 8.0
+		local motion = mod:get("dolly_motion") or "smooth"
+
+		mod._dolly_progress = mod._dolly_progress + (dt / math.max(0.1, duration)) * mod._dolly_direction
+
+		if motion == "loop" then
+			if mod._dolly_progress >= 1.0 then
+				mod._dolly_progress = 1.0
+				mod._dolly_direction = -1
+			elseif mod._dolly_progress <= 0.0 then
+				mod._dolly_progress = 0.0
+				mod._dolly_direction = 1
+			end
+		else
+			if mod._dolly_progress >= 1.0 then
+				mod._dolly_progress = 1.0
+			end
+		end
+
+		local raw_t = math.clamp(mod._dolly_progress, 0, 1)
+		local t = raw_t
+
+		if motion == "smooth" or motion == "loop" then
+			t = raw_t * raw_t * (3 - 2 * raw_t)
+		end
+
+		if mod._dolly_total_dist and mod._dolly_total_dist > 0.001 and mod._dolly_dists then
+			local target_dist = t * mod._dolly_total_dist
+			local accumulated = 0
+			local seg_index = 1
+			local seg_t = 0
+
+			for i = 1, #mod._dolly_dists do
+				local seg_len = mod._dolly_dists[i]
+
+				if target_dist <= accumulated + seg_len or i == #mod._dolly_dists then
+					seg_index = i
+					if seg_len > 0.0001 then
+						seg_t = math.clamp((target_dist - accumulated) / seg_len, 0, 1)
+					else
+						seg_t = 0
+					end
+					break
+				end
+
+				accumulated = accumulated + seg_len
+			end
+
+			local pt1 = mod._dolly_points[seg_index]
+			local pt2 = mod._dolly_points[seg_index + 1]
+
+			if pt1 and pt2 and mod._dolly_pos and mod._dolly_rot then
+				local cur_pos = Vector3.lerp(pt1.pos:unbox(), pt2.pos:unbox(), seg_t)
+				local cur_rot = Quaternion.lerp(pt1.rot:unbox(), pt2.rot:unbox(), seg_t)
+
+				mod._dolly_pos:store(cur_pos)
+				mod._dolly_rot:store(cur_rot)
+
+				if pt1.fov and pt2.fov then
+					local cur_fov = math.floor(pt1.fov + (pt2.fov - pt1.fov) * seg_t + 0.5)
+					mod._fov_override = cur_fov
+				end
+			end
+		end
+
+		if motion ~= "loop" and mod._dolly_progress >= 1.0 then
+			mod.set_dolly_active(false)
+		end
+	end
+
 	if mod._fov_override then
 		local world = _get_level_world()
 
@@ -717,7 +1000,13 @@ end)
 
 mod:hook("CameraManager", "_update_camera_properties", function(func, self, camera, shadow_cull_camera, camera_nodes, camera_data, viewport_name)
 	if mod:is_enabled() then
-		if mod._tilt_angle and mod._tilt_angle ~= 0 and camera_data.rotation then
+		if mod._tripod_active and mod._tripod_pos and mod._tripod_rot then
+			camera_data.position = mod._tripod_pos:unbox()
+			camera_data.rotation = mod._tripod_rot:unbox()
+		elseif mod._dolly_active and mod._dolly_pos and mod._dolly_rot then
+			camera_data.position = mod._dolly_pos:unbox()
+			camera_data.rotation = mod._dolly_rot:unbox()
+		elseif mod._tilt_angle and mod._tilt_angle ~= 0 and camera_data.rotation then
 			local roll_offset = Quaternion.from_yaw_pitch_roll(0, 0, math.rad(mod._tilt_angle))
 			camera_data.rotation = Quaternion.multiply(camera_data.rotation, roll_offset)
 		end
@@ -769,6 +1058,88 @@ mod:hook_safe("CameraManager", "shading_callback", function(self, world, shading
 	end
 end)
 
+mod:hook_safe("FreeFlightManager", "_update_camera", function(self, input, dt, camera_data)
+	if mod:is_enabled() then
+		local pos = nil
+		local rot = nil
+
+		if mod._tripod_active and mod._tripod_pos and mod._tripod_rot then
+			pos = mod._tripod_pos:unbox()
+			rot = mod._tripod_rot:unbox()
+		elseif mod._dolly_active and mod._dolly_pos and mod._dolly_rot then
+			pos = mod._dolly_pos:unbox()
+			rot = mod._dolly_rot:unbox()
+		end
+
+		if pos and rot then
+			local world = Managers.world:world(camera_data.viewport_world_name)
+			local viewport = world and ScriptWorld.global_free_flight_viewport(world)
+			local cam = camera_data.frustum_freeze_camera or (viewport and ScriptViewport.camera(viewport))
+
+			if cam then
+				ScriptCamera.set_local_position(cam, pos)
+				ScriptCamera.set_local_rotation(cam, rot)
+			end
+		end
+	end
+end)
+
+mod:hook("BloodManager", "play_screen_space_blood", function(func, self, fx_extension)
+	if mod:is_enabled() and mod._screen_effects_hidden then
+		return
+	end
+
+	return func(self, fx_extension)
+end)
+
+mod:hook("PlayerUnitFxExtension", "spawn_exclusive_particle", function(func, self, particle_name, ...)
+	if mod:is_enabled() and mod._screen_effects_hidden and particle_name and string.find(particle_name, "screenspace") then
+		return
+	end
+
+	return func(self, particle_name, ...)
+end)
+
+mod:hook("PlayerUnitMoodExtension", "_add_mood", function(func, self, t, mood_type, reset_time)
+	if mod:is_enabled() and mod._screen_effects_hidden then
+		return
+	end
+
+	return func(self, t, mood_type, reset_time)
+end)
+
+mod:hook("PlayerUnitMoodExtension", "add_timed_mood", function(func, self, t, mood_type)
+	if mod:is_enabled() and mod._screen_effects_hidden then
+		return
+	end
+
+	return func(self, t, mood_type)
+end)
+
+mod:hook("PlasmagunOverheatEffects", "_update_screenspace", function(func, ...)
+	if mod:is_enabled() and mod._screen_effects_hidden then
+		return
+	end
+
+	return func(...)
+end)
+
+mod:hook("PlayerUnitBuffExtension", "_start_fx", function(func, self, index, template)
+	if mod:is_enabled() and mod._screen_effects_hidden and template and template.player_effects then
+		return
+	end
+
+	return func(self, index, template)
+end)
+
+mod:hook("FxSystem", "start_template_effect", function(func, self, template, ...)
+	if mod:is_enabled() and mod._screen_effects_hidden and template and (template.name == "chaos_daemonhost_ambience" or template.name == "corruptor_ambience" or template.name == "corruptor_ambience_burrowed") then
+		return
+	end
+
+	return func(self, template, ...)
+end)
+
 mod.on_setting_changed = function(setting_id)
 	if setting_id == "freeze_time" then
 		local val = mod:get("freeze_time")
@@ -795,6 +1166,11 @@ mod.on_setting_changed = function(setting_id)
 		if val ~= mod._arms_hidden then
 			mod.set_hide_arms(val)
 		end
+	elseif setting_id == "hide_screen_effects" then
+		local val = mod:get("hide_screen_effects")
+		if val ~= mod._screen_effects_hidden then
+			mod.set_hide_screen_effects(val)
+		end
 	elseif setting_id == "dof_active" then
 		local val = mod:get("dof_active")
 		if val ~= mod._dof_active then
@@ -804,6 +1180,16 @@ mod.on_setting_changed = function(setting_id)
 		local val = mod:get("lantern_active")
 		if val ~= mod._lantern_active then
 			mod.set_lantern_active(val)
+		end
+	elseif setting_id == "tripod_active" then
+		local val = mod:get("tripod_active")
+		if val ~= mod._tripod_active then
+			mod.set_tripod_active(val)
+		end
+	elseif setting_id == "dolly_active" then
+		local val = mod:get("dolly_active")
+		if val ~= mod._dolly_active then
+			mod.set_dolly_active(val)
 		end
 	elseif setting_id == "slomo_scale" and mod._slomo_active and not mod._time_frozen then
 		local slomo_scale = mod:get("slomo_scale") or 0.10
@@ -835,3 +1221,41 @@ end
 mod.on_unload = function(exit_game)
 	_cleanup_all()
 end
+
+mod:command("dolly", mod:localize("cmd_dolly_desc"), function(action, param)
+	local act = action and string.lower(action) or "help"
+
+	if act == "add" or act == "a" or act == "b" or act == "c" or act == "d" or act == "point" then
+		local custom_name = nil
+		if act ~= "add" and act ~= "point" then
+			custom_name = string.upper(act)
+		elseif param and param ~= "" then
+			custom_name = string.upper(param)
+		end
+		mod.dolly_add_point(custom_name)
+	elseif act == "clear" or act == "reset" then
+		mod.dolly_clear_points()
+	elseif act == "list" or act == "show" then
+		mod.dolly_list_points()
+	elseif act == "play" or act == "start" or act == "go" then
+		mod.set_dolly_active(true)
+	elseif act == "stop" or act == "pause" then
+		mod.set_dolly_active(false)
+	elseif act == "loop" then
+		local cur = mod:get("dolly_motion")
+		local new_motion = cur == "loop" and "smooth" or "loop"
+		mod:set("dolly_motion", new_motion)
+		mod:echo(mod:localize("msg_dolly_motion") .. ": " .. new_motion)
+	elseif act == "time" and param then
+		local num = tonumber(param)
+		if num and num > 0 then
+			mod:set("dolly_duration", num)
+			mod:echo(mod:localize("msg_dolly_duration") .. ": " .. tostring(num) .. "s")
+		end
+	else
+		mod:echo(mod:localize("msg_dolly_help_1"))
+		mod:echo(mod:localize("msg_dolly_help_2"))
+		mod:echo(mod:localize("msg_dolly_help_3"))
+		mod:echo(mod:localize("msg_dolly_help_4"))
+	end
+end)
