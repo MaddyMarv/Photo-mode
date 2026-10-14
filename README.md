@@ -1,4 +1,5 @@
 ### [Photo Mode](https://www.nexusmods.com/games/warhammer40kdarktide/mods/1461)
+<img width="737" height="517" alt="image" src="https://github.com/user-attachments/assets/2f193769-b8ab-4127-a0ee-1ebbf4f14928" />
 
 Photo mode for solo play and Psykhanium: freeze time, slow-mo, hide HUD/arms, camera lens controls, and studio lights.
 
