@@ -20,7 +20,6 @@ To do:
 - Allow In-Game Actions
 - Toggle In-Game Actions (Hotkey)
 
-- Interactive Tabs: Camera, Time & HUD, Lighting, Camera Rigs
 [b]Time Control[/b]
 - Freeze Time
 - Freeze Time (Hotkey)
