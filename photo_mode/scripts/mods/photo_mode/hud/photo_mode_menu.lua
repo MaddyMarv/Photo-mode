@@ -601,6 +601,7 @@ end
 function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	if not mod:is_enabled() or not mod._menu_open then
 		M.pop_cursor()
+		mod._menu_hovered = false
 		element._menu_items = nil
 		M.state.dragging = nil
 		M.state.pressed_id = nil
@@ -612,6 +613,7 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	local back_pressed = input_service and input_service:get("back")
 	if back_pressed then
 		mod.close_photo_menu()
+		mod._menu_hovered = false
 		M.pop_cursor()
 		element._menu_items = nil
 		return
@@ -677,29 +679,41 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	local wy = M.state.y
 	local tab_y = wy + title_h + 8
 
-	local close_x = wx + ww - 32
-	local close_y = wy + 5
-	local close_w = 26
-	local close_h = 26
+	local close_w = 24
+	local close_h = 24
+	local close_x = wx + ww - close_w - 6
+	local close_y = wy + 6
 
-	local lock_w = 100
-	local lock_h = 26
+	local lock_w = 88
+	local lock_h = 24
 	local lock_x = close_x - lock_w - 6
-	local lock_y = wy + 5
+	local lock_y = wy + 6
+
+	local act_w = 118
+	local act_h = 24
+	local act_x = lock_x - act_w - 6
+	local act_y = wy + 6
 
 	local is_hover_close = cx and _point_in_rect(cx, cy, close_x, close_y, close_w, close_h)
 	local is_hover_lock = cx and _point_in_rect(cx, cy, lock_x, lock_y, lock_w, lock_h)
-	local is_hover_title = cx and _point_in_rect(cx, cy, wx, wy, ww, title_h) and not is_hover_close and not is_hover_lock
+	local is_hover_actions = cx and _point_in_rect(cx, cy, act_x, act_y, act_w, act_h)
+	local is_hover_title = cx and _point_in_rect(cx, cy, wx, wy, ww, title_h) and not is_hover_close and not is_hover_lock and not is_hover_actions
+	local is_hover_window = cx and _point_in_rect(cx, cy, wx, wy, ww, wh)
+
+	mod._menu_hovered = (is_hover_window and true or false) or (M.state.dragging ~= nil) or (M.state.pressed_id ~= nil)
 
 	if left_pressed and cx then
 		if is_hover_close then
 			mod.close_photo_menu()
 			M.pop_cursor()
+			mod._menu_hovered = false
 			element._menu_items = nil
 			return
 		elseif is_hover_lock then
 			mod._camera_locked = not (mod._camera_locked ~= false)
 			mod:set("lock_camera_in_menu", mod._camera_locked, true)
+		elseif is_hover_actions then
+			mod.toggle_in_game_actions()
 		elseif is_hover_title then
 			M.state.dragging = "window"
 			M.state.drag_offset_x = cx - wx
@@ -730,8 +744,17 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	_add_border(items, wx + 1, wy + 1, ww - 2, wh - 2, 1, colors.window_border_inner, 1)
 
 	_add_panel(items, wx, wy, ww, title_h, colors.title_bg, colors.title_border, 1, 2)
-	_add_text(items, "PHOTO MODE", wx + 16, wy, 120, title_h, 16, colors.title_text, "left", 3)
+	_add_text(items, "PHOTO MODE", wx + 16, wy, 110, title_h, 15, colors.title_text, "left", 3)
 	_add_text(items, "drag to move", wx + 130, wy + 2, 110, title_h, 12, colors.title_hint, "left", 3)
+
+	local is_actions_allowed = mod._actions_allowed ~= false
+	local act_label = is_actions_allowed and "ACTIONS: ALLOWED" or "ACTIONS: BLOCKED"
+	local act_bg = is_actions_allowed and (is_hover_actions and colors.btn_active_hover or colors.btn_active_bg) or (is_hover_actions and colors.btn_hover_bg or colors.btn_bg)
+	local act_border = is_actions_allowed and colors.btn_active_border or (is_hover_actions and colors.btn_hover_border or colors.btn_border)
+	local act_text = is_actions_allowed and colors.btn_active_text or colors.btn_text
+
+	_add_panel(items, act_x, act_y, act_w, act_h, act_bg, act_border, 1, 3)
+	_add_text(items, act_label, act_x, act_y, act_w, act_h, 11, act_text, "center", 4)
 
 	local is_locked = mod._camera_locked ~= false
 	local lock_label = is_locked and "CAM: LOCKED" or "CAM: FREE"
@@ -740,7 +763,7 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	local lock_text = is_locked and colors.btn_active_text or colors.btn_text
 
 	_add_panel(items, lock_x, lock_y, lock_w, lock_h, lock_bg, lock_border, 1, 3)
-	_add_text(items, lock_label, lock_x, lock_y, lock_w, lock_h, 12, lock_text, "center", 4)
+	_add_text(items, lock_label, lock_x, lock_y, lock_w, lock_h, 11, lock_text, "center", 4)
 
 	local close_bg = is_hover_close and colors.close_hover or colors.close_bg
 	local close_tx = is_hover_close and colors.close_text_hover or colors.close_text
@@ -875,6 +898,7 @@ function M.draw(element, ui_renderer, render_settings)
 end
 
 function M.destroy(element)
+	mod._menu_hovered = false
 	M.pop_cursor()
 end
 

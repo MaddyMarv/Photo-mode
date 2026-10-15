@@ -18,9 +18,13 @@ to do:
 [b]Photo Mode In-Game Menu[/b]
 - Photo Mode Menu (Hotkey)
 - Lock Camera in Menu
+- Allow In-Game Actions
+- Toggle In-Game Actions (Hotkey)
 
 Menu:
 - Interactive Tabs: Camera, Time & HUD, Lighting, Camera Rigs
+- In-Game Actions Toggle (ACTIONS: ALLOWED / BLOCKED) with smart click protection
+- Camera View Lock Toggle (CAM: LOCKED / FREE)
 - Dynamic Auto-Sizing Window (shrinks height per tab to remove empty space)
 - Drag to Reposition Menu Window (saved across sessions)
 - Live RGB Color Picker & Color Swatches

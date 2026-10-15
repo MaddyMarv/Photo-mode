@@ -21,6 +21,8 @@ end
 
 mod._menu_open = session.menu_open
 mod._camera_locked = mod:get("lock_camera_in_menu") ~= false
+mod._actions_allowed = mod:get("allow_in_game_actions") ~= false
+mod._menu_hovered = false
 mod:add_require_path("photo_mode/scripts/mods/photo_mode/hud/hud_element_photo_mode_menu")
 
 mod._time_frozen = false
@@ -556,6 +558,7 @@ end
 mod.close_photo_menu = function()
 	if mod._menu_open then
 		mod._menu_open = false
+		mod._menu_hovered = false
 		local s = rawget(_G, "_photo_mode_session")
 		if s then
 			s.menu_open = false
@@ -573,6 +576,20 @@ mod.toggle_photo_menu = function()
 	else
 		mod.open_photo_menu()
 	end
+end
+
+mod.set_in_game_actions = function(allowed)
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._actions_allowed = allowed
+	mod:set("allow_in_game_actions", allowed, true)
+	mod:echo(mod:localize(mod._actions_allowed and "msg_actions_allowed" or "msg_actions_blocked"))
+end
+
+mod.toggle_in_game_actions = function()
+	mod.set_in_game_actions(not (mod._actions_allowed ~= false))
 end
 
 mod.set_freeze_time = function(enabled)
@@ -1561,10 +1578,15 @@ end)
 
 mod:hook("HumanUnitInput", "get", function(func, self, action, ...)
 	if mod:is_enabled() and mod._menu_open then
-		if action == "action_one_pressed" or action == "action_one_hold"
-			or action == "action_two_pressed" or action == "action_two_hold"
-			or action == "weapon_reload" or action == "wield" then
-			return false
+		local actions_allowed = mod._actions_allowed ~= false
+		local menu_input_active = mod._menu_hovered
+
+		if not actions_allowed or menu_input_active then
+			if action == "action_one_pressed" or action == "action_one_hold" or action == "action_one_release"
+				or action == "action_two_pressed" or action == "action_two_hold" or action == "action_two_release"
+				or action == "weapon_reload" or action == "wield" then
+				return false
+			end
 		end
 	end
 
@@ -1859,6 +1881,8 @@ mod.on_setting_changed = function(setting_id)
 		mod._dof_distance = mod:get("dof_focal_distance") or 3.0
 	elseif setting_id == "lock_camera_in_menu" then
 		mod._camera_locked = mod:get("lock_camera_in_menu") ~= false
+	elseif setting_id == "allow_in_game_actions" then
+		mod._actions_allowed = mod:get("allow_in_game_actions") ~= false
 	end
 
 	if setting_id == "light_intensity" or setting_id == "light_radius"

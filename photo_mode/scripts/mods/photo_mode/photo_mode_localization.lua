@@ -23,6 +23,24 @@ return {
 	lock_camera_in_menu_description = {
 		en = "Locks camera view rotation while the Photo Mode menu is open.",
 	},
+	allow_in_game_actions = {
+		en = "Allow In-Game Actions",
+	},
+	allow_in_game_actions_description = {
+		en = "Allows attacks, aiming, reload, and weapon switching while the photo menu is open (actions are automatically blocked when clicking on the menu).",
+	},
+	toggle_in_game_actions = {
+		en = "Toggle In-Game Actions Keybind",
+	},
+	toggle_in_game_actions_description = {
+		en = "Hotkey to toggle in-game actions between allowed and blocked.",
+	},
+	msg_actions_allowed = {
+		en = "In-game actions: Allowed",
+	},
+	msg_actions_blocked = {
+		en = "In-game actions: Blocked",
+	},
 	tab_time_hud = {
 		en = "Time & HUD",
 	},

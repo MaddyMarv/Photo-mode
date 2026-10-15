@@ -25,6 +25,20 @@ return {
 						type = "checkbox",
 						default_value = true,
 					},
+					{
+						setting_id = "allow_in_game_actions",
+						type = "checkbox",
+						default_value = true,
+					},
+					{
+						setting_id = "toggle_in_game_actions",
+						type = "keybind",
+						default_value = {},
+						keybind_global = true,
+						keybind_trigger = "pressed",
+						keybind_type = "function_call",
+						function_name = "toggle_in_game_actions",
+					},
 				},
 			},
 			{
