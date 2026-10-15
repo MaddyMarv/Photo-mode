@@ -15,6 +15,18 @@ to do:
 
 [b]Options:[/b]
 
+[b]Photo Mode In-Game Menu[/b]
+- Photo Mode Menu (Hotkey)
+- Lock Camera in Menu
+
+Menu:
+- Interactive Tabs: Camera, Time & HUD, Lighting, Camera Rigs
+- Dynamic Auto-Sizing Window (shrinks height per tab to remove empty space)
+- Drag to Reposition Menu Window (saved across sessions)
+- Live RGB Color Picker & Color Swatches
+- Reset Tab Settings Button
+- Reset All Settings Button
+
 [b]Time Control[/b]
 - Freeze Time
 - Freeze Time (Hotkey)

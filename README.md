@@ -13,9 +13,21 @@ Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide
 
 to do: 
 - add character posing with emotes/end of screen with the ability to clone a posed character
-- add integration with [url=https://www.nexusmods.com/warhammer40kdarktide/mods/1365]Replays[/url]
+- add integration with [Replays](https://www.nexusmods.com/warhammer40kdarktide/mods/1365)
 
 **Options:**
+
+**Photo Mode In-Game Menu**
+- Photo Mode Menu (Hotkey)
+- Lock Camera in Menu
+
+Menu:
+- Interactive Tabs: Camera, Time & HUD, Lighting, Camera Rigs
+- Dynamic Auto-Sizing Window (shrinks height per tab to remove empty space)
+- Drag to Reposition Menu Window (saved across sessions)
+- Live RGB Color Picker & Color Swatches
+- Reset Tab Settings Button
+- Reset All Settings Button
 
 **Time Control**
 - Freeze Time
