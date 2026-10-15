@@ -2,6 +2,7 @@ local mod = get_mod("photo_mode")
 
 local ScriptViewport = require("scripts/foundation/utilities/script_viewport")
 local ScriptWorld = require("scripts/foundation/utilities/script_world")
+local MoodSettings = require("scripts/settings/camera/mood/mood_settings")
 
 mod._time_frozen = false
 mod._slomo_active = false
@@ -235,7 +236,18 @@ end
 local function _reset_hud_state()
 	mod._hud_hidden = false
 	mod._chat_hidden = false
-	mod._screen_effects_hidden = false
+
+	if mod._screen_effects_hidden then
+		mod._screen_effects_hidden = false
+		local player = Managers.player and Managers.player:local_player(1)
+		local camera_handler = player and player.camera_handler
+		local mood_handler = camera_handler and camera_handler._mood_handler
+		if mood_handler and mood_handler._current_moods_status then
+			for mood_type, _ in pairs(mood_handler._current_moods_status) do
+				mood_handler._current_moods_status[mood_type] = MoodSettings.status.inactive
+			end
+		end
+	end
 
 	if mod._arms_hidden then
 		local player = Managers.player and Managers.player:local_player(1)
@@ -479,17 +491,35 @@ mod.set_hide_screen_effects = function(enabled)
 	mod._screen_effects_hidden = enabled
 	mod:set("hide_screen_effects", enabled)
 
-	if mod._screen_effects_hidden then
-		local player = Managers.player and Managers.player:local_player(1)
-		local unit = player and player.player_unit
-		local mood_extension = unit and ScriptUnit.has_extension(unit, "mood_system")
+	local player = Managers.player and Managers.player:local_player(1)
+	local camera_handler = player and player.camera_handler
+	local mood_handler = camera_handler and camera_handler._mood_handler
 
-		if mood_extension and mood_extension.remove_all_moods then
-			mood_extension:remove_all_moods()
+	if mod._screen_effects_hidden then
+		if mood_handler then
+			local world = mood_handler._world
+			local looping_particles = mood_handler._looping_particles
+			if world and looping_particles then
+				for mood_type, particles in pairs(looping_particles) do
+					for i = #particles, 1, -1 do
+						local particle_id = particles[i]
+						if particle_id then
+							World.destroy_particles(world, particle_id)
+						end
+						particles[i] = nil
+					end
+				end
+			end
 		end
 
 		mod:echo(mod:localize("msg_screen_effects_hidden"))
 	else
+		if mood_handler and mood_handler._current_moods_status then
+			for mood_type, _ in pairs(mood_handler._current_moods_status) do
+				mood_handler._current_moods_status[mood_type] = MoodSettings.status.inactive
+			end
+		end
+
 		mod:echo(mod:localize("msg_screen_effects_shown"))
 	end
 end
@@ -1336,28 +1366,42 @@ mod:hook("PlayerUnitMoodExtension", "add_timed_mood", function(func, self, t, mo
 	return func(self, t, mood_type)
 end)
 
-mod:hook("PlasmagunOverheatEffects", "_update_screenspace", function(func, ...)
+mod:hook("MoodHandler", "_blend_list", function(func, self, blend_list, moods_data)
 	if mod:is_enabled() and mod._screen_effects_hidden then
 		return
 	end
 
-	return func(...)
+	return func(self, blend_list, moods_data)
 end)
 
-mod:hook("PlayerUnitBuffExtension", "_start_fx", function(func, self, index, template)
-	if mod:is_enabled() and mod._screen_effects_hidden and template and template.player_effects then
+mod:hook("MoodHandler", "_spawn_particles", function(func, self, particle_name)
+	if mod:is_enabled() and mod._screen_effects_hidden then
+		return nil
+	end
+
+	return func(self, particle_name)
+end)
+
+mod:hook("MoodHandler", "_update_particles", function(func, self, added_moods, removing_moods, removed_moods, moods_data)
+	if mod:is_enabled() and mod._screen_effects_hidden then
+		local world = self._world
+		local looping_particles = self._looping_particles
+		if world and looping_particles then
+			for mood_type, particles in pairs(looping_particles) do
+				for i = #particles, 1, -1 do
+					local particle_id = particles[i]
+					if particle_id then
+						World.destroy_particles(world, particle_id)
+					end
+					particles[i] = nil
+				end
+			end
+		end
+
 		return
 	end
 
-	return func(self, index, template)
-end)
-
-mod:hook("FxSystem", "start_template_effect", function(func, self, template, ...)
-	if mod:is_enabled() and mod._screen_effects_hidden and template and (template.name == "chaos_daemonhost_ambience" or template.name == "corruptor_ambience" or template.name == "corruptor_ambience_burrowed") then
-		return
-	end
-
-	return func(self, template, ...)
+	return func(self, added_moods, removing_moods, removed_moods, moods_data)
 end)
 
 mod.on_setting_changed = function(setting_id)
