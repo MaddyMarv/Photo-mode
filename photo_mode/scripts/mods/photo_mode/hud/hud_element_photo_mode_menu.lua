@@ -31,6 +31,13 @@ HudElementPhotoModeMenu.update = function(self, dt, t, ui_renderer, render_setti
 end
 
 HudElementPhotoModeMenu._draw_widgets = function(self, dt, t, input_service, ui_renderer, render_settings)
+	if render_settings and not render_settings.material_flags then
+		render_settings.material_flags = 0
+	end
+	if ui_renderer and ui_renderer.render_settings and not ui_renderer.render_settings.material_flags then
+		ui_renderer.render_settings.material_flags = 0
+	end
+
 	if self._menu and self._menu.draw then
 		self._menu.draw(self, ui_renderer, render_settings)
 	end

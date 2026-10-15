@@ -1523,6 +1523,14 @@ mod:hook_safe("UIHud", "_update_element_visibility", function(self)
 	end
 end)
 
+mod:hook("UIRenderer", "script_draw_text", function(func, self, ...)
+	if self.render_settings and not self.render_settings.material_flags then
+		self.render_settings.material_flags = 0
+	end
+
+	return func(self, ...)
+end)
+
 mod:hook("HumanUnitInput", "get", function(func, self, action, ...)
 	if mod:is_enabled() and mod._menu_open then
 		if action == "action_one_pressed" or action == "action_one_hold"

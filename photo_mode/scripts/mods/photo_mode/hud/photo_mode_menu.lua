@@ -6,7 +6,14 @@ local UIFonts = require("scripts/managers/ui/ui_fonts")
 local M = {}
 
 M.WIDTH = 520
-M.HEIGHT = 560
+M.DEFAULT_HEIGHT = 540
+M.HEIGHT = 540
+M.TAB_HEIGHTS = {
+	time_hud = 380,
+	camera = 450,
+	rigs = 490,
+	lighting = 540,
+}
 M.LAYER = 950
 M.FONT_TYPE = "proxima_nova_bold"
 
@@ -614,14 +621,6 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	local screen_w = RESOLUTION_LOOKUP.width * inverse_scale
 	local screen_h = RESOLUTION_LOOKUP.height * inverse_scale
 
-	if not M.state.x or not M.state.y then
-		M.state.x = math.floor((screen_w - M.WIDTH) / 2)
-		M.state.y = 80
-	end
-
-	M.state.x = _clamp(M.state.x, 10, screen_w - M.WIDTH - 10)
-	M.state.y = _clamp(M.state.y, 10, screen_h - M.HEIGHT - 10)
-
 	local cursor = input_service and input_service:get("cursor")
 	local cx, cy
 
@@ -634,12 +633,50 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	local left_hold = input_service and input_service:get("left_hold")
 	local left_released = input_service and input_service:get("left_released")
 
+	local ww = M.WIDTH
+	local title_h = 36
+	local tab_h = 28
+	local pad_x = 16
+	local content_w = ww - pad_x * 2
+	local num_tabs = 4
+	local tab_gap = 6
+	local tab_w = math.floor((content_w - (num_tabs - 1) * tab_gap) / num_tabs)
+
+	local tabs = {
+		{ id = "camera", label = "CAMERA" },
+		{ id = "time_hud", label = "TIME & HUD" },
+		{ id = "lighting", label = "LIGHTING" },
+		{ id = "rigs", label = "RIGS" },
+	}
+
+	local test_wx = M.state.x or math.floor((screen_w - ww) / 2)
+	local test_wy = M.state.y or 80
+	local test_tab_y = test_wy + title_h + 8
+
+	if left_pressed and cx and not M.state.dragging then
+		for i = 1, num_tabs do
+			local tx = test_wx + pad_x + (i - 1) * (tab_w + tab_gap)
+			if _point_in_rect(cx, cy, tx, test_tab_y, tab_w, tab_h) then
+				M.state.current_tab = tabs[i].id
+				break
+			end
+		end
+	end
+
+	local wh = M.TAB_HEIGHTS[M.state.current_tab] or M.DEFAULT_HEIGHT
+
+	if not M.state.x or not M.state.y then
+		M.state.x = math.floor((screen_w - ww) / 2)
+		M.state.y = 80
+	end
+
+	M.state.x = _clamp(M.state.x, 10, screen_w - ww - 10)
+	M.state.y = _clamp(M.state.y, 10, screen_h - wh - 10)
+
 	local wx = M.state.x
 	local wy = M.state.y
-	local ww = M.WIDTH
-	local wh = M.HEIGHT
+	local tab_y = wy + title_h + 8
 
-	local title_h = 36
 	local close_x = wx + ww - 32
 	local close_y = wy + 5
 	local close_w = 26
@@ -675,6 +712,7 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 		M.state.y = _clamp(cy - M.state.drag_offset_y, 10, screen_h - wh - 10)
 		wx = M.state.x
 		wy = M.state.y
+		tab_y = wy + title_h + 8
 	end
 
 	if left_released or not left_hold then
@@ -709,21 +747,6 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	_add_panel(items, close_x, close_y, close_w, close_h, close_bg, nil, 0, 3)
 	_add_text(items, "X", close_x, close_y, close_w, close_h, 14, close_tx, "center", 4)
 
-	local tab_y = wy + title_h + 8
-	local tab_h = 28
-	local pad_x = 16
-	local content_w = ww - pad_x * 2
-	local num_tabs = 4
-	local tab_gap = 6
-	local tab_w = math.floor((content_w - (num_tabs - 1) * tab_gap) / num_tabs)
-
-	local tabs = {
-		{ id = "camera", label = "CAMERA" },
-		{ id = "time_hud", label = "TIME & HUD" },
-		{ id = "lighting", label = "LIGHTING" },
-		{ id = "rigs", label = "RIGS" },
-	}
-
 	for i = 1, num_tabs do
 		local tinfo = tabs[i]
 		local tx = wx + pad_x + (i - 1) * (tab_w + tab_gap)
@@ -739,10 +762,6 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 
 		if is_cur then
 			_add_rect(items, tx + 1, tab_y + tab_h - 2, tab_w - 2, 2, colors.tab_active_bar, 4)
-		end
-
-		if is_htab and left_pressed then
-			M.state.current_tab = tinfo.id
 		end
 	end
 
@@ -814,6 +833,14 @@ function M.draw(element, ui_renderer, render_settings)
 
 	if not items or #items == 0 then
 		return
+	end
+
+	render_settings = render_settings or (ui_renderer and ui_renderer.render_settings)
+	if render_settings and not render_settings.material_flags then
+		render_settings.material_flags = 0
+	end
+	if ui_renderer and ui_renderer.render_settings and not ui_renderer.render_settings.material_flags then
+		ui_renderer.render_settings.material_flags = 0
 	end
 
 	local text_options = {
