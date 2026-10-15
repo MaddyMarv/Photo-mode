@@ -38,6 +38,7 @@ to do:
 - Hide Screen Effects (Hotkey)
 
 **Lens Zoom / FOV**
+- Enable Lens Zoom / FOV Override
 - Zoom In (Hotkey)
 - Zoom Out (Hotkey)
 - Reset FOV (Hotkey)
