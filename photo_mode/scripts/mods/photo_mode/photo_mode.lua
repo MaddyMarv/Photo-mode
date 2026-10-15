@@ -229,26 +229,26 @@ local function _ensure_hud_group()
 
 		for i = #visibility_groups, 1, -1 do
 			if visibility_groups[i].name == HUD_VISIBILITY_GROUP then
-				if not found_group then
-					found_group = visibility_groups[i]
-				else
-					table.remove(visibility_groups, i)
-				end
+				found_group = visibility_groups[i]
+				table.remove(visibility_groups, i)
 			end
 		end
 
 		if not found_group then
 			found_group = {
 				name = HUD_VISIBILITY_GROUP,
-				validation_function = function(h)
-					return mod:is_enabled() and mod._hud_hidden
-				end,
 			}
-			table.insert(visibility_groups, 1, found_group)
 		end
 
-		found_group.visible_elements = found_group.visible_elements or {}
-		found_group.visible_elements.HudElementPhotoModeMenu = true
+		found_group.validation_function = function(h)
+			local m = get_mod("photo_mode")
+			return m and m:is_enabled() and m._hud_hidden
+		end
+		found_group.visible_elements = {
+			HudElementPhotoModeMenu = true,
+		}
+
+		table.insert(visibility_groups, 1, found_group)
 
 		if hud._elements and not hud._elements.HudElementPhotoModeMenu then
 			local elements = hud._elements
@@ -314,6 +314,9 @@ local function _reset_hud_state()
 	local hud = Managers.ui and Managers.ui._hud
 	if hud then
 		hud._current_group_name = nil
+		if hud._update_element_visibility then
+			hud:_update_element_visibility()
+		end
 	end
 end
 
@@ -688,13 +691,16 @@ mod.set_hide_hud = function(enabled)
 		return
 	end
 
-	_ensure_hud_group()
 	mod._hud_hidden = enabled
 	mod:set("hide_hud", enabled)
+	_ensure_hud_group()
 
 	local hud = Managers.ui and Managers.ui._hud
 	if hud then
 		hud._current_group_name = nil
+		if hud._update_element_visibility then
+			hud:_update_element_visibility()
+		end
 	end
 
 	mod:echo(mod:localize(mod._hud_hidden and "msg_hud_hidden" or "msg_hud_shown"))
@@ -1492,7 +1498,8 @@ mod:hook("UIHud", "init", function(func, self, elements, visibility_groups, para
 	table.insert(visibility_groups, 1, {
 		name = HUD_VISIBILITY_GROUP,
 		validation_function = function(hud)
-			return mod:is_enabled() and mod._hud_hidden
+			local m = get_mod("photo_mode")
+			return m and m:is_enabled() and m._hud_hidden
 		end,
 		visible_elements = {
 			HudElementPhotoModeMenu = true,
@@ -1521,6 +1528,27 @@ mod:hook_safe("UIHud", "_update_element_visibility", function(self)
 	if self._elements and self._elements.HudElementPhotoModeMenu then
 		self._currently_visible_elements.HudElementPhotoModeMenu = true
 	end
+end)
+
+mod:hook("UIHud", "draw", function(func, self, dt, t, input_service)
+	if mod:is_enabled() and mod._hud_hidden then
+		local menu_element = self._elements and self._elements.HudElementPhotoModeMenu
+		if menu_element and menu_element.draw then
+			local is_world_enabled = Managers.world:is_world_enabled(self._world_name)
+			if is_world_enabled then
+				local ui_renderer = self._ui_renderer
+				local render_settings = self._render_settings
+				local saved_start_layer = render_settings and render_settings.start_layer
+				if ui_renderer and render_settings then
+					menu_element:draw(dt, t, ui_renderer, render_settings, input_service)
+					render_settings.start_layer = saved_start_layer
+				end
+			end
+		end
+		return
+	end
+
+	return func(self, dt, t, input_service)
 end)
 
 mod:hook("UIRenderer", "script_draw_text", function(func, self, ...)
@@ -1583,7 +1611,7 @@ mod:hook("HubPlayerOrientation", "pre_update", function(func, self, main_t, main
 end)
 
 mod:hook("ConstantElementChat", "draw", function(func, self, dt, t, ui_renderer, render_settings, input_service)
-	if mod:is_enabled() and (mod._chat_hidden or mod._hud_hidden) then
+	if mod:is_enabled() and mod._chat_hidden then
 		return
 	end
 
@@ -1591,7 +1619,7 @@ mod:hook("ConstantElementChat", "draw", function(func, self, dt, t, ui_renderer,
 end)
 
 mod:hook("ConstantElementChat", "should_draw", function(func, self)
-	if mod:is_enabled() and (mod._chat_hidden or mod._hud_hidden) then
+	if mod:is_enabled() and mod._chat_hidden then
 		return false
 	end
 
@@ -1848,6 +1876,12 @@ mod.on_disabled = function(initial_call)
 	_cleanup_all()
 end
 
+mod.on_all_mods_loaded = function()
+	_ensure_hud_group()
+end
+
 mod.on_unload = function(exit_game)
 	_cleanup_all(not exit_game)
 end
+
+_ensure_hud_group()
