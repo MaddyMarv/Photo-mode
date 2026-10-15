@@ -23,16 +23,6 @@ To do:
 - Allow In-Game Actions
 - Toggle In-Game Actions (Hotkey)
 
-Menu:
-- Interactive Tabs: Camera, Time & HUD, Lighting, Camera Rigs
-- In-Game Actions Toggle (ACTIONS: ALLOWED / BLOCKED) with smart click protection
-- Camera View Lock Toggle (CAM: LOCKED / FREE)
-- Dynamic Auto-Sizing Window (shrinks height per tab to remove empty space)
-- Drag to Reposition Menu Window (saved across sessions)
-- Live RGB Color Picker & Color Swatches
-- Reset Tab Settings Button
-- Reset All Settings Button
-
 **Time Control**
 - Freeze Time
 - Freeze Time (Hotkey)
