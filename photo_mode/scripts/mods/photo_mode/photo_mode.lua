@@ -16,6 +16,7 @@ mod._placed_lights = {}
 mod._lantern_active = false
 mod._lantern_unit = nil
 
+mod._fov_active = false
 mod._fov_override = nil
 mod._tilt_angle = 0
 mod._dof_active = false
@@ -101,7 +102,7 @@ local function _get_camera_transform()
 end
 
 local function _get_current_fov()
-	if mod._fov_override then
+	if mod._fov_active and mod._fov_override then
 		return mod._fov_override
 	end
 
@@ -263,6 +264,7 @@ local function _reset_hud_state()
 end
 
 local function _reset_camera_state()
+	mod._fov_active = false
 	mod._fov_override = nil
 	mod._tilt_angle = 0
 
@@ -302,6 +304,7 @@ local function _cleanup_all()
 	mod:set("hide_chat", false)
 	mod:set("hide_arms", false)
 	mod:set("hide_screen_effects", false)
+	mod:set("fov_active", false)
 	mod:set("dof_active", false)
 	mod:set("lantern_active", false)
 	mod:set("tripod_active", false)
@@ -528,15 +531,56 @@ mod.toggle_hide_screen_effects = function()
 	mod.set_hide_screen_effects(not mod._screen_effects_hidden)
 end
 
+mod.set_fov_active = function(enabled, silent)
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._fov_active = enabled
+	mod:set("fov_active", enabled)
+
+	if enabled then
+		if not mod._fov_override then
+			mod._fov_override = mod:get("camera_fov") or 65
+		end
+		if not silent then
+			mod:echo(mod:localize("msg_fov_enabled"))
+		end
+	else
+		mod._fov_override = nil
+
+		local world = _get_level_world()
+		if world then
+			local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+			if ff_viewport then
+				local cam = ScriptViewport.camera(ff_viewport)
+				if cam then
+					Camera.set_vertical_fov(cam, math.rad(65))
+				end
+			end
+		end
+
+		if not silent then
+			mod:echo(mod:localize("msg_fov_disabled"))
+		end
+	end
+end
+
+mod.toggle_fov = function()
+	mod.set_fov_active(not mod._fov_active)
+end
+
 mod.zoom_in = function()
 	if not mod:is_enabled() then
 		return
 	end
 
 	local current = _get_current_fov()
-	local new_fov = math.max(15, current - 5)
+	local new_fov = math.max(1, current - 5)
 
 	mod._fov_override = new_fov
+	mod:set("camera_fov", new_fov)
+	mod.set_fov_active(true, true)
 	mod:echo(mod:localize("msg_fov_changed") .. ": " .. tostring(new_fov) .. "°")
 end
 
@@ -546,9 +590,11 @@ mod.zoom_out = function()
 	end
 
 	local current = _get_current_fov()
-	local new_fov = math.min(100, current + 5)
+	local new_fov = math.min(160, current + 5)
 
 	mod._fov_override = new_fov
+	mod:set("camera_fov", new_fov)
+	mod.set_fov_active(true, true)
 	mod:echo(mod:localize("msg_fov_changed") .. ": " .. tostring(new_fov) .. "°")
 end
 
@@ -557,22 +603,8 @@ mod.reset_fov = function()
 		return
 	end
 
-	mod._fov_override = nil
-
-	local world = _get_level_world()
-
-	if world then
-		local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
-
-		if ff_viewport then
-			local cam = ScriptViewport.camera(ff_viewport)
-
-			if cam then
-				Camera.set_vertical_fov(cam, math.rad(65))
-			end
-		end
-	end
-
+	mod:set("camera_fov", 65)
+	mod.set_fov_active(false, true)
 	mod:echo(mod:localize("msg_fov_reset"))
 end
 
@@ -743,6 +775,7 @@ mod.set_dolly_active = function(enabled)
 
 		if start_pt.fov then
 			mod._fov_override = start_pt.fov
+			mod._fov_active = true
 		end
 
 		mod._dolly_active = true
@@ -752,6 +785,10 @@ mod.set_dolly_active = function(enabled)
 		mod._dolly_active = false
 		mod._dolly_pos = nil
 		mod._dolly_rot = nil
+		if not mod:get("fov_active") then
+			mod._fov_active = false
+			mod._fov_override = nil
+		end
 		mod:set("dolly_active", false)
 		mod:echo(mod:localize("msg_dolly_stopped"))
 	end
@@ -1143,6 +1180,7 @@ mod.update = function(dt)
 				if pt1.fov and pt2.fov then
 					local cur_fov = math.floor(pt1.fov + (pt2.fov - pt1.fov) * seg_t + 0.5)
 					mod._fov_override = cur_fov
+					mod._fov_active = true
 				end
 			end
 		end
@@ -1196,7 +1234,7 @@ mod.update = function(dt)
 		end
 	end
 
-	if mod._fov_override then
+	if mod._fov_active and mod._fov_override then
 		local world = _get_level_world()
 
 		if world then
@@ -1256,14 +1294,14 @@ mod:hook("CameraManager", "_update_camera_properties", function(func, self, came
 			camera_data.rotation = Quaternion.multiply(camera_data.rotation, roll_offset)
 		end
 
-		if mod._fov_override and camera_data.vertical_fov then
+		if mod._fov_active and mod._fov_override and camera_data.vertical_fov then
 			camera_data.vertical_fov = math.rad(mod._fov_override)
 		end
 	end
 
 	func(self, camera, shadow_cull_camera, camera_nodes, camera_data, viewport_name)
 
-	if mod:is_enabled() and mod._fov_override then
+	if mod:is_enabled() and mod._fov_active and mod._fov_override then
 		Camera.set_vertical_fov(camera, math.rad(mod._fov_override))
 	end
 end)
@@ -1435,6 +1473,11 @@ mod.on_setting_changed = function(setting_id)
 		if val ~= mod._screen_effects_hidden then
 			mod.set_hide_screen_effects(val)
 		end
+	elseif setting_id == "fov_active" then
+		local val = mod:get("fov_active")
+		if val ~= mod._fov_active then
+			mod.set_fov_active(val)
+		end
 	elseif setting_id == "dof_active" then
 		local val = mod:get("dof_active")
 		if val ~= mod._dof_active then
@@ -1464,7 +1507,9 @@ mod.on_setting_changed = function(setting_id)
 		local slomo_scale = mod:get("slomo_scale") or 0.10
 		_set_time_scale(slomo_scale)
 	elseif setting_id == "camera_fov" then
-		mod._fov_override = mod:get("camera_fov")
+		if mod._fov_active then
+			mod._fov_override = mod:get("camera_fov")
+		end
 	elseif setting_id == "camera_tilt" then
 		mod._tilt_angle = mod:get("camera_tilt") or 0
 	elseif setting_id == "dof_focal_distance" then

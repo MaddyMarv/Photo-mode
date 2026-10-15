@@ -145,6 +145,20 @@ return {
 				tab = mod:localize("tab_camera"),
 				sub_widgets = {
 					{
+						setting_id = "fov_active",
+						type = "checkbox",
+						default_value = false,
+					},
+					{
+						setting_id = "toggle_fov",
+						type = "keybind",
+						default_value = {},
+						keybind_global = true,
+						keybind_trigger = "pressed",
+						keybind_type = "function_call",
+						function_name = "toggle_fov",
+					},
+					{
 						setting_id = "zoom_in",
 						type = "keybind",
 						default_value = {},
@@ -175,7 +189,7 @@ return {
 						setting_id = "camera_fov",
 						type = "numeric",
 						default_value = 65,
-						range = { 15, 100 },
+						range = { 1, 160 },
 						decimals_number = 0,
 						step_size_value = 1,
 					},

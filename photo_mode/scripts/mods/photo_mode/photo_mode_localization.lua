@@ -161,6 +161,24 @@ return {
 	fov_settings = {
 		en = "Lens Zoom / FOV",
 	},
+	fov_active = {
+		en = "Enable Lens Zoom / FOV Override",
+	},
+	fov_active_description = {
+		en = "Toggles custom FOV on or off. When disabled, normal game FOV is unaffected.",
+	},
+	toggle_fov = {
+		en = "Toggle FOV Override Keybind",
+	},
+	toggle_fov_description = {
+		en = "Hotkey to toggle custom FOV override on or off.",
+	},
+	msg_fov_enabled = {
+		en = "FOV Override: Enabled",
+	},
+	msg_fov_disabled = {
+		en = "FOV Override: Disabled (Normal FOV Restored)",
+	},
 	zoom_in = {
 		en = "Zoom In",
 	},
@@ -183,7 +201,7 @@ return {
 		en = "Camera FOV",
 	},
 	camera_fov_description = {
-		en = "Field of view angle.",
+		en = "Field of view angle (1° to 160°).",
 	},
 	msg_fov_changed = {
 		en = "FOV",
