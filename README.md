@@ -10,7 +10,10 @@ Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide
 - [Disable Screen Effects](https://www.nexusmods.com/warhammer40kdarktide/mods/17) - Toggle off screen blood splatters, distortion, and damage overlays to keep your camera lens clear.
 - [Transparent Mod Settings](https://www.nexusmods.com/warhammer40kdarktide/mods/1205) - Lets you see through the mod menu while adjusting lighting and camera settings live.
 - [Immersive Evasion](https://www.nexusmods.com/warhammer40kdarktide/mods/345) - For cooler, more accurate sliding and dodging animations in third person.
-- [Replays](https://www.nexusmods.com/warhammer40kdarktide/mods/1365) - In-game match recording and playback with timeline scrubbing and freecam.
+
+to do: 
+- add character posing with emotes/end of screen with the ability to clone a posed character
+- add integration with [url=https://www.nexusmods.com/warhammer40kdarktide/mods/1365]Replays[/url]
 
 **Options:**
 
