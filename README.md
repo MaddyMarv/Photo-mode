@@ -7,13 +7,12 @@ Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide
 **Recommended Mods:**
 - [Camera Freeflight](https://www.nexusmods.com/warhammer40kdarktide/mods/32) - Fly the camera around freely to frame your shots from any angle.
 - [Perspectives](https://www.nexusmods.com/warhammer40kdarktide/mods/111) - Third-person camera view for seeing your own character and camera angles.
-- [Disable Screen Effects](https://www.nexusmods.com/warhammer40kdarktide/mods/17) - Toggle off screen blood splatters, distortion, and damage overlays to keep your camera lens clear.
 - [Transparent Mod Settings](https://www.nexusmods.com/warhammer40kdarktide/mods/1205) - Lets you see through the mod menu while adjusting lighting and camera settings live.
 - [Immersive Evasion](https://www.nexusmods.com/warhammer40kdarktide/mods/345) - For cooler, more accurate sliding and dodging animations in third person.
 
-to do: 
-- add character posing with emotes/end of screen with the ability to clone a posed character
-- add integration with [Replays](https://www.nexusmods.com/warhammer40kdarktide/mods/1365)
+To do: 
+- Add character posing with emotes/end of screen with the ability to clone a posed character
+- Add integration with [Replays](https://www.nexusmods.com/warhammer40kdarktide/mods/1365)
 
 **Options:**
 
