@@ -7,6 +7,27 @@ return {
 	options = {
 		widgets = {
 			{
+				setting_id = "menu_settings",
+				type = "group",
+				tab = mod:localize("tab_menu"),
+				sub_widgets = {
+					{
+						setting_id = "toggle_photo_menu",
+						type = "keybind",
+						default_value = {},
+						keybind_global = true,
+						keybind_trigger = "pressed",
+						keybind_type = "function_call",
+						function_name = "toggle_photo_menu",
+					},
+					{
+						setting_id = "lock_camera_in_menu",
+						type = "checkbox",
+						default_value = true,
+					},
+				},
+			},
+			{
 				setting_id = "time_settings",
 				type = "group",
 				tab = mod:localize("tab_time_hud"),
@@ -145,20 +166,6 @@ return {
 				tab = mod:localize("tab_camera"),
 				sub_widgets = {
 					{
-						setting_id = "fov_active",
-						type = "checkbox",
-						default_value = false,
-					},
-					{
-						setting_id = "toggle_fov",
-						type = "keybind",
-						default_value = {},
-						keybind_global = true,
-						keybind_trigger = "pressed",
-						keybind_type = "function_call",
-						function_name = "toggle_fov",
-					},
-					{
 						setting_id = "zoom_in",
 						type = "keybind",
 						default_value = {},
@@ -186,10 +193,10 @@ return {
 						function_name = "reset_fov",
 					},
 					{
-						setting_id = "camera_fov",
+						setting_id = "camera_fov_offset",
 						type = "numeric",
-						default_value = 65,
-						range = { 1, 160 },
+						default_value = 0,
+						range = { -60, 60 },
 						decimals_number = 0,
 						step_size_value = 1,
 					},

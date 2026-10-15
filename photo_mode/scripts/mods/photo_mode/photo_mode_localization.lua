@@ -5,6 +5,24 @@ return {
 	mod_description = {
 		en = "Photo mode for solo play and Psykhanium: freeze time, slow-mo, hide HUD/arms, camera lens controls, and studio lights.",
 	},
+	tab_menu = {
+		en = "Menu",
+	},
+	menu_settings = {
+		en = "Menu Settings",
+	},
+	toggle_photo_menu = {
+		en = "Photo Mode Menu Keybind",
+	},
+	toggle_photo_menu_description = {
+		en = "Hotkey to open or close the on-screen Photo Mode controls menu.",
+	},
+	lock_camera_in_menu = {
+		en = "Lock Camera in Menu",
+	},
+	lock_camera_in_menu_description = {
+		en = "Locks camera view rotation while the Photo Mode menu is open.",
+	},
 	tab_time_hud = {
 		en = "Time & HUD",
 	},
@@ -161,53 +179,35 @@ return {
 	fov_settings = {
 		en = "Lens Zoom / FOV",
 	},
-	fov_active = {
-		en = "Enable Lens Zoom / FOV Override",
-	},
-	fov_active_description = {
-		en = "Toggles custom FOV on or off. When disabled, normal game FOV is unaffected.",
-	},
-	toggle_fov = {
-		en = "Toggle FOV Override Keybind",
-	},
-	toggle_fov_description = {
-		en = "Hotkey to toggle custom FOV override on or off.",
-	},
-	msg_fov_enabled = {
-		en = "FOV Override: Enabled",
-	},
-	msg_fov_disabled = {
-		en = "FOV Override: Disabled (Normal FOV Restored)",
-	},
 	zoom_in = {
 		en = "Zoom In",
 	},
 	zoom_in_description = {
-		en = "Lowers FOV by 5.",
+		en = "Narrows FOV by 5 degrees.",
 	},
 	zoom_out = {
 		en = "Zoom Out",
 	},
 	zoom_out_description = {
-		en = "Raises FOV by 5.",
+		en = "Widens FOV by 5 degrees.",
 	},
 	reset_fov = {
 		en = "Reset FOV",
 	},
 	reset_fov_description = {
-		en = "Resets FOV to normal.",
+		en = "Resets FOV offset back to 0 (normal game FOV).",
 	},
-	camera_fov = {
-		en = "Camera FOV",
+	camera_fov_offset = {
+		en = "FOV Offset",
 	},
-	camera_fov_description = {
-		en = "Field of view angle (1° to 160°).",
+	camera_fov_offset_description = {
+		en = "Adjusts field of view up or down relative to normal (-60° to +60°). 0 is default.",
 	},
 	msg_fov_changed = {
-		en = "FOV",
+		en = "FOV Offset",
 	},
 	msg_fov_reset = {
-		en = "FOV: Reset to Default",
+		en = "FOV Offset: Reset to 0°",
 	},
 	tilt_settings = {
 		en = "Dutch Angle / Tilt",
@@ -568,5 +568,26 @@ return {
 	},
 	msg_dolly_motion = {
 		en = "Dolly Motion",
+	},
+	reset_tab = {
+		en = "RESET TAB",
+	},
+	reset_all = {
+		en = "RESET ALL",
+	},
+	msg_reset_tab_camera = {
+		en = "Camera: Settings Reset",
+	},
+	msg_reset_tab_time_hud = {
+		en = "Time & HUD: Settings Reset",
+	},
+	msg_reset_tab_lighting = {
+		en = "Lighting: Settings Reset",
+	},
+	msg_reset_tab_rigs = {
+		en = "Camera Rigs: Settings Reset",
+	},
+	msg_reset_all = {
+		en = "Photo Mode: All Settings Reset to Default",
 	},
 }

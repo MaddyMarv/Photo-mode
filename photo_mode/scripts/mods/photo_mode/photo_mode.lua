@@ -4,6 +4,25 @@ local ScriptViewport = require("scripts/foundation/utilities/script_viewport")
 local ScriptWorld = require("scripts/foundation/utilities/script_world")
 local MoodSettings = require("scripts/settings/camera/mood/mood_settings")
 
+if Managers.input and Managers.input._cursor_stack_data then
+	local cdata = Managers.input._cursor_stack_data
+	if cdata.stack_depth < 0 then
+		cdata.stack_depth = 0
+	end
+end
+
+local session = rawget(_G, "_photo_mode_session")
+if not session then
+	session = {
+		menu_open = false,
+	}
+	rawset(_G, "_photo_mode_session", session)
+end
+
+mod._menu_open = session.menu_open
+mod._camera_locked = mod:get("lock_camera_in_menu") ~= false
+mod:add_require_path("photo_mode/scripts/mods/photo_mode/hud/hud_element_photo_mode_menu")
+
 mod._time_frozen = false
 mod._slomo_active = false
 mod._hud_hidden = false
@@ -16,11 +35,10 @@ mod._placed_lights = {}
 mod._lantern_active = false
 mod._lantern_unit = nil
 
-mod._fov_active = false
-mod._fov_override = nil
-mod._tilt_angle = 0
+mod._fov_offset = mod:get("camera_fov_offset") or 0
+mod._tilt_angle = mod:get("camera_tilt") or 0
 mod._dof_active = false
-mod._dof_distance = 3.0
+mod._dof_distance = mod:get("dof_focal_distance") or 3.0
 mod._dof_was_applied = false
 mod._original_render_dof = nil
 
@@ -102,10 +120,6 @@ local function _get_camera_transform()
 end
 
 local function _get_current_fov()
-	if mod._fov_active and mod._fov_override then
-		return mod._fov_override
-	end
-
 	local world = _get_level_world()
 
 	if world then
@@ -132,7 +146,7 @@ local function _get_current_fov()
 		end
 	end
 
-	return mod:get("camera_fov") or 65
+	return 65
 end
 
 local function _set_time_scale(scale)
@@ -190,27 +204,62 @@ local function _apply_light_settings(light_obj)
 	end
 end
 
+mod.update_all_lights = function()
+	if mod._lantern_active and mod._lantern_unit and Unit.alive(mod._lantern_unit) then
+		local light_obj = Unit.light(mod._lantern_unit, 1)
+		if light_obj then
+			_apply_light_settings(light_obj)
+		end
+	end
+
+	for i = 1, #mod._placed_lights do
+		local light_data = mod._placed_lights[i]
+		if light_data and light_data.unit and Unit.alive(light_data.unit) and light_data.light_obj then
+			_apply_light_settings(light_data.light_obj)
+		end
+	end
+end
+
 local function _ensure_hud_group()
 	local hud = Managers.ui and Managers.ui._hud
 	local visibility_groups = hud and hud._visibility_groups
 
 	if visibility_groups then
-		local found = false
+		local found_group = nil
 
-		for i = 1, #visibility_groups do
+		for i = #visibility_groups, 1, -1 do
 			if visibility_groups[i].name == HUD_VISIBILITY_GROUP then
-				found = true
-				break
+				if not found_group then
+					found_group = visibility_groups[i]
+				else
+					table.remove(visibility_groups, i)
+				end
 			end
 		end
 
-		if not found then
-			table.insert(visibility_groups, 1, {
+		if not found_group then
+			found_group = {
 				name = HUD_VISIBILITY_GROUP,
 				validation_function = function(h)
 					return mod:is_enabled() and mod._hud_hidden
 				end,
-			})
+			}
+			table.insert(visibility_groups, 1, found_group)
+		end
+
+		found_group.visible_elements = found_group.visible_elements or {}
+		found_group.visible_elements.HudElementPhotoModeMenu = true
+
+		if hud._elements and not hud._elements.HudElementPhotoModeMenu then
+			local elements = hud._elements
+			local elements_array = hud._elements_array
+			local class = rawget(_G, "HudElementPhotoModeMenu")
+
+			if class then
+				local element = class:new(hud, 100, RESOLUTION_LOOKUP.scale)
+				elements.HudElementPhotoModeMenu = element
+				elements_array[#elements_array + 1] = element
+			end
 		end
 	end
 end
@@ -261,12 +310,17 @@ local function _reset_hud_state()
 
 		mod._arms_hidden = false
 	end
+
+	local hud = Managers.ui and Managers.ui._hud
+	if hud then
+		hud._current_group_name = nil
+	end
 end
 
 local function _reset_camera_state()
-	mod._fov_active = false
-	mod._fov_override = nil
+	mod._fov_offset = 0
 	mod._tilt_angle = 0
+	mod:set("camera_tilt", 0)
 
 	if mod._dof_active and mod._original_render_dof == "false" and Application.set_render_setting then
 		Application.set_render_setting("dof_enabled", "false")
@@ -276,7 +330,12 @@ local function _reset_camera_state()
 	mod._original_render_dof = nil
 end
 
-local function _cleanup_all()
+local function _cleanup_all(is_reloading)
+	if is_reloading then
+		return
+	end
+
+	mod.close_photo_menu()
 	_reset_time_state()
 	_reset_hud_state()
 	_reset_camera_state()
@@ -304,7 +363,8 @@ local function _cleanup_all()
 	mod:set("hide_chat", false)
 	mod:set("hide_arms", false)
 	mod:set("hide_screen_effects", false)
-	mod:set("fov_active", false)
+	mod:set("camera_fov_offset", 0)
+	mod:set("camera_tilt", 0)
 	mod:set("dof_active", false)
 	mod:set("lantern_active", false)
 	mod:set("tripod_active", false)
@@ -317,6 +377,199 @@ local function _cleanup_all()
 	mod._orbit_center = nil
 	mod._orbit_angle = 0
 	mod._orbit_height = 0
+end
+
+mod.reset_tab_camera = function(silent)
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._silent_reset = true
+	mod._fov_offset = 0
+	mod:set("camera_fov_offset", 0)
+
+	local world = _get_level_world()
+	if world then
+		local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+		if ff_viewport then
+			local cam = ScriptViewport.camera(ff_viewport)
+			if cam then
+				Camera.set_vertical_fov(cam, math.rad(65))
+			end
+		end
+	end
+
+	mod._tilt_angle = 0
+	mod:set("camera_tilt", 0)
+
+	if mod._dof_active then
+		mod.set_dof_active(false)
+	end
+	mod._dof_distance = 3.0
+	mod:set("dof_focal_distance", 3.0, true)
+	mod:set("dof_focal_region", 4.0, true)
+	mod:set("dof_blur_amount", 1.0, true)
+	mod._silent_reset = nil
+
+	if not silent then
+		mod:echo(mod:localize("msg_reset_tab_camera"))
+	end
+end
+
+mod.reset_tab_time_hud = function(silent)
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._silent_reset = true
+	if mod._time_frozen then
+		mod.set_freeze_time(false)
+	end
+	if mod._slomo_active then
+		mod.set_slomo_active(false)
+	end
+	mod:set("slomo_scale", 0.10, true)
+
+	if mod._hud_hidden then
+		mod.set_hide_hud(false)
+	end
+	if mod._chat_hidden then
+		mod.set_hide_chat(false)
+	end
+	if mod._arms_hidden then
+		mod.set_hide_arms(false)
+	end
+	if mod._screen_effects_hidden then
+		mod.set_hide_screen_effects(false)
+	end
+	mod._silent_reset = nil
+
+	if not silent then
+		mod:echo(mod:localize("msg_reset_tab_time_hud"))
+	end
+end
+
+mod.reset_tab_lighting = function(silent)
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._silent_clear = true
+	mod.clear_lights()
+	mod._silent_clear = nil
+
+	mod._silent_reset = true
+	if mod._lantern_active then
+		mod.set_lantern_active(false)
+	end
+	mod._silent_reset = nil
+
+	mod:set("light_type", "spot", true)
+	mod:set("cast_shadows", true, true)
+	mod:set("light_intensity", 100, true)
+	mod:set("light_radius", 20, true)
+	mod:set("spot_angle", 45, true)
+	mod:set("light_color", { 255, 255, 245, 220 }, true)
+
+	if mod.update_all_lights then
+		mod.update_all_lights()
+	end
+
+	if not silent then
+		mod:echo(mod:localize("msg_reset_tab_lighting"))
+	end
+end
+
+mod.reset_tab_rigs = function(silent)
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._silent_reset = true
+	if mod._tripod_active then
+		mod.set_tripod_active(false)
+	end
+	if mod._dolly_active then
+		mod.set_dolly_active(false)
+	end
+	table.clear(mod._dolly_points)
+	mod:set("dolly_duration", 8.0, true)
+	mod:set("dolly_motion", "smooth", true)
+
+	if mod._orbit_active then
+		mod.set_orbit_active(false)
+	end
+	mod._silent_reset = nil
+
+	mod:set("orbit_target_mode", "character", true)
+	mod:set("orbit_facing", "inward", true)
+	mod:set("orbit_direction", "cw", true)
+	mod:set("orbit_speed", 15, true)
+	mod:set("orbit_radius", 4.0, true)
+	mod:set("orbit_height", 0.3, true)
+
+	if not silent then
+		mod:echo(mod:localize("msg_reset_tab_rigs"))
+	end
+end
+
+mod.reset_tab_settings = function(tab_id, silent)
+	if tab_id == "camera" then
+		mod.reset_tab_camera(silent)
+	elseif tab_id == "time_hud" then
+		mod.reset_tab_time_hud(silent)
+	elseif tab_id == "lighting" then
+		mod.reset_tab_lighting(silent)
+	elseif tab_id == "rigs" then
+		mod.reset_tab_rigs(silent)
+	end
+end
+
+mod.reset_all_settings = function()
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod.reset_tab_camera(true)
+	mod.reset_tab_time_hud(true)
+	mod.reset_tab_lighting(true)
+	mod.reset_tab_rigs(true)
+
+	mod:echo(mod:localize("msg_reset_all"))
+end
+
+mod.open_photo_menu = function()
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._menu_open = true
+	local s = rawget(_G, "_photo_mode_session")
+	if s then
+		s.menu_open = true
+	end
+end
+
+mod.close_photo_menu = function()
+	if mod._menu_open then
+		mod._menu_open = false
+		local s = rawget(_G, "_photo_mode_session")
+		if s then
+			s.menu_open = false
+		end
+	end
+end
+
+mod.toggle_photo_menu = function()
+	if not mod:is_enabled() then
+		return
+	end
+
+	if mod._menu_open then
+		mod.close_photo_menu()
+	else
+		mod.open_photo_menu()
+	end
 end
 
 mod.set_freeze_time = function(enabled)
@@ -367,7 +620,7 @@ mod.step_frame = function()
 
 	_set_world_paused(false)
 	_set_time_scale(1.0)
-	mod._step_frames_remaining = 1
+	mod._step_frames_remaining = (mod._step_frames_remaining or 0) + 2
 end
 
 mod.set_slomo_active = function(enabled)
@@ -438,6 +691,12 @@ mod.set_hide_hud = function(enabled)
 	_ensure_hud_group()
 	mod._hud_hidden = enabled
 	mod:set("hide_hud", enabled)
+
+	local hud = Managers.ui and Managers.ui._hud
+	if hud then
+		hud._current_group_name = nil
+	end
+
 	mod:echo(mod:localize(mod._hud_hidden and "msg_hud_hidden" or "msg_hud_shown"))
 end
 
@@ -531,57 +790,19 @@ mod.toggle_hide_screen_effects = function()
 	mod.set_hide_screen_effects(not mod._screen_effects_hidden)
 end
 
-mod.set_fov_active = function(enabled, silent)
-	if not mod:is_enabled() then
-		return
-	end
-
-	mod._fov_active = enabled
-	mod:set("fov_active", enabled)
-
-	if enabled then
-		if not mod._fov_override then
-			mod._fov_override = mod:get("camera_fov") or 65
-		end
-		if not silent then
-			mod:echo(mod:localize("msg_fov_enabled"))
-		end
-	else
-		mod._fov_override = nil
-
-		local world = _get_level_world()
-		if world then
-			local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
-			if ff_viewport then
-				local cam = ScriptViewport.camera(ff_viewport)
-				if cam then
-					Camera.set_vertical_fov(cam, math.rad(65))
-				end
-			end
-		end
-
-		if not silent then
-			mod:echo(mod:localize("msg_fov_disabled"))
-		end
-	end
-end
-
-mod.toggle_fov = function()
-	mod.set_fov_active(not mod._fov_active)
-end
-
 mod.zoom_in = function()
 	if not mod:is_enabled() then
 		return
 	end
 
-	local current = _get_current_fov()
-	local new_fov = math.max(1, current - 5)
+	local cur = mod._fov_offset or 0
+	local new_offset = math.clamp(cur - 5, -60, 60)
 
-	mod._fov_override = new_fov
-	mod:set("camera_fov", new_fov)
-	mod.set_fov_active(true, true)
-	mod:echo(mod:localize("msg_fov_changed") .. ": " .. tostring(new_fov) .. "°")
+	mod._fov_offset = new_offset
+	mod:set("camera_fov_offset", new_offset)
+
+	local sign = new_offset > 0 and "+" or ""
+	mod:echo(mod:localize("msg_fov_changed") .. ": " .. sign .. tostring(new_offset) .. "°")
 end
 
 mod.zoom_out = function()
@@ -589,23 +810,38 @@ mod.zoom_out = function()
 		return
 	end
 
-	local current = _get_current_fov()
-	local new_fov = math.min(160, current + 5)
+	local cur = mod._fov_offset or 0
+	local new_offset = math.clamp(cur + 5, -60, 60)
 
-	mod._fov_override = new_fov
-	mod:set("camera_fov", new_fov)
-	mod.set_fov_active(true, true)
-	mod:echo(mod:localize("msg_fov_changed") .. ": " .. tostring(new_fov) .. "°")
+	mod._fov_offset = new_offset
+	mod:set("camera_fov_offset", new_offset)
+
+	local sign = new_offset > 0 and "+" or ""
+	mod:echo(mod:localize("msg_fov_changed") .. ": " .. sign .. tostring(new_offset) .. "°")
 end
 
-mod.reset_fov = function()
+mod.reset_fov = function(silent)
 	if not mod:is_enabled() then
 		return
 	end
 
-	mod:set("camera_fov", 65)
-	mod.set_fov_active(false, true)
-	mod:echo(mod:localize("msg_fov_reset"))
+	mod._fov_offset = 0
+	mod:set("camera_fov_offset", 0)
+
+	local world = _get_level_world()
+	if world then
+		local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+		if ff_viewport then
+			local cam = ScriptViewport.camera(ff_viewport)
+			if cam then
+				Camera.set_vertical_fov(cam, math.rad(65))
+			end
+		end
+	end
+
+	if not silent and not mod._silent_reset then
+		mod:echo(mod:localize("msg_fov_reset"))
+	end
 end
 
 mod.tilt_left = function()
@@ -614,6 +850,7 @@ mod.tilt_left = function()
 	end
 
 	mod._tilt_angle = math.clamp((mod._tilt_angle or 0) - 2, -45, 45)
+	mod:set("camera_tilt", mod._tilt_angle)
 	mod:echo(mod:localize("msg_tilt_changed") .. ": " .. tostring(mod._tilt_angle) .. "°")
 end
 
@@ -623,16 +860,21 @@ mod.tilt_right = function()
 	end
 
 	mod._tilt_angle = math.clamp((mod._tilt_angle or 0) + 2, -45, 45)
+	mod:set("camera_tilt", mod._tilt_angle)
 	mod:echo(mod:localize("msg_tilt_changed") .. ": " .. tostring(mod._tilt_angle) .. "°")
 end
 
-mod.reset_tilt = function()
+mod.reset_tilt = function(silent)
 	if not mod:is_enabled() then
 		return
 	end
 
 	mod._tilt_angle = 0
-	mod:echo(mod:localize("msg_tilt_reset"))
+	mod:set("camera_tilt", 0)
+
+	if not silent and not mod._silent_reset then
+		mod:echo(mod:localize("msg_tilt_reset"))
+	end
 end
 
 mod.set_tripod_active = function(enabled)
@@ -708,7 +950,7 @@ mod.dolly_add_point = function(label)
 		name = tostring(name),
 		pos = Vector3Box(pos),
 		rot = QuaternionBox(rot),
-		fov = _get_current_fov(),
+		fov_offset = mod._fov_offset or 0,
 	})
 
 	mod:echo(mod:localize("msg_dolly_point_added") .. ": Point " .. tostring(name) .. " (" .. tostring(#mod._dolly_points) .. " total)")
@@ -773,9 +1015,8 @@ mod.set_dolly_active = function(enabled)
 		mod._dolly_pos = Vector3Box(start_pt.pos:unbox())
 		mod._dolly_rot = QuaternionBox(start_pt.rot:unbox())
 
-		if start_pt.fov then
-			mod._fov_override = start_pt.fov
-			mod._fov_active = true
+		if start_pt.fov_offset then
+			mod._fov_offset = start_pt.fov_offset
 		end
 
 		mod._dolly_active = true
@@ -785,10 +1026,7 @@ mod.set_dolly_active = function(enabled)
 		mod._dolly_active = false
 		mod._dolly_pos = nil
 		mod._dolly_rot = nil
-		if not mod:get("fov_active") then
-			mod._fov_active = false
-			mod._fov_override = nil
-		end
+		mod._fov_offset = mod:get("camera_fov_offset") or 0
 		mod:set("dolly_active", false)
 		mod:echo(mod:localize("msg_dolly_stopped"))
 	end
@@ -1177,10 +1415,9 @@ mod.update = function(dt)
 				mod._dolly_pos:store(cur_pos)
 				mod._dolly_rot:store(cur_rot)
 
-				if pt1.fov and pt2.fov then
-					local cur_fov = math.floor(pt1.fov + (pt2.fov - pt1.fov) * seg_t + 0.5)
-					mod._fov_override = cur_fov
-					mod._fov_active = true
+				if pt1.fov_offset and pt2.fov_offset then
+					local cur_offset = math.floor(pt1.fov_offset + (pt2.fov_offset - pt1.fov_offset) * seg_t + 0.5)
+					mod._fov_offset = cur_offset
 				end
 			end
 		end
@@ -1234,7 +1471,7 @@ mod.update = function(dt)
 		end
 	end
 
-	if mod._fov_active and mod._fov_override then
+	if mod._fov_offset and mod._fov_offset ~= 0 then
 		local world = _get_level_world()
 
 		if world then
@@ -1244,7 +1481,7 @@ mod.update = function(dt)
 				local cam = ScriptViewport.camera(ff_viewport)
 
 				if cam then
-					Camera.set_vertical_fov(cam, math.rad(mod._fov_override))
+					Camera.set_vertical_fov(cam, math.clamp(math.rad(65 + mod._fov_offset), math.rad(10), math.rad(150)))
 				end
 			end
 		end
@@ -1257,9 +1494,84 @@ mod:hook("UIHud", "init", function(func, self, elements, visibility_groups, para
 		validation_function = function(hud)
 			return mod:is_enabled() and mod._hud_hidden
 		end,
+		visible_elements = {
+			HudElementPhotoModeMenu = true,
+		},
 	})
 
+	if not table.find_by_key(elements, "class_name", "HudElementPhotoModeMenu") then
+		table.insert(elements, {
+			class_name = "HudElementPhotoModeMenu",
+			filename = "photo_mode/scripts/mods/photo_mode/hud/hud_element_photo_mode_menu",
+			use_hud_scale = false,
+			visibility_groups = {
+				"alive",
+				"communication_wheel",
+				"in_hub_view",
+				"in_view",
+				HUD_VISIBILITY_GROUP,
+			},
+		})
+	end
+
 	return func(self, elements, visibility_groups, params)
+end)
+
+mod:hook_safe("UIHud", "_update_element_visibility", function(self)
+	if self._elements and self._elements.HudElementPhotoModeMenu then
+		self._currently_visible_elements.HudElementPhotoModeMenu = true
+	end
+end)
+
+mod:hook("HumanUnitInput", "get", function(func, self, action, ...)
+	if mod:is_enabled() and mod._menu_open then
+		if action == "action_one_pressed" or action == "action_one_hold"
+			or action == "action_two_pressed" or action == "action_two_hold"
+			or action == "weapon_reload" or action == "wield" then
+			return false
+		end
+	end
+
+	return func(self, action, ...)
+end)
+
+mod:hook("InputManager", "pop_cursor", function(func, self, reference)
+	local cursor_stack_data = self._cursor_stack_data
+	if cursor_stack_data then
+		if not cursor_stack_data.stack_references[reference] then
+			return
+		end
+	end
+
+	func(self, reference)
+
+	if cursor_stack_data and cursor_stack_data.stack_depth < 0 then
+		cursor_stack_data.stack_depth = 0
+	end
+end)
+
+mod:hook("CameraHandler", "update", function(func, self, dt, t, player_orientation, input)
+	if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
+		input = input:null_service()
+	end
+
+	return func(self, dt, t, player_orientation, input)
+end)
+
+mod:hook("DefaultPlayerOrientation", "pre_update", function(func, self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
+	if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
+		input = input:null_service()
+	end
+
+	return func(self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
+end)
+
+mod:hook("HubPlayerOrientation", "pre_update", function(func, self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
+	if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
+		input = input:null_service()
+	end
+
+	return func(self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
 end)
 
 mod:hook("ConstantElementChat", "draw", function(func, self, dt, t, ui_renderer, render_settings, input_service)
@@ -1294,16 +1606,12 @@ mod:hook("CameraManager", "_update_camera_properties", function(func, self, came
 			camera_data.rotation = Quaternion.multiply(camera_data.rotation, roll_offset)
 		end
 
-		if mod._fov_active and mod._fov_override and camera_data.vertical_fov then
-			camera_data.vertical_fov = math.rad(mod._fov_override)
+		if mod._fov_offset and mod._fov_offset ~= 0 and camera_data.vertical_fov then
+			camera_data.vertical_fov = math.clamp(camera_data.vertical_fov + math.rad(mod._fov_offset), math.rad(10), math.rad(150))
 		end
 	end
 
 	func(self, camera, shadow_cull_camera, camera_nodes, camera_data, viewport_name)
-
-	if mod:is_enabled() and mod._fov_active and mod._fov_override then
-		Camera.set_vertical_fov(camera, math.rad(mod._fov_override))
-	end
 end)
 
 mod:hook_safe("CameraManager", "shading_callback", function(self, world, shading_env, viewport, default_shading_environment_resource)
@@ -1341,7 +1649,13 @@ mod:hook_safe("CameraManager", "shading_callback", function(self, world, shading
 	end
 end)
 
-mod:hook_safe("FreeFlightManager", "_update_camera", function(self, input, dt, camera_data)
+mod:hook("FreeFlightManager", "_update_camera", function(func, self, input, dt, camera_data)
+	if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
+		input = input:null_service()
+	end
+
+	func(self, input, dt, camera_data)
+
 	if mod:is_enabled() then
 		local pos = nil
 		local rot = nil
@@ -1473,11 +1787,6 @@ mod.on_setting_changed = function(setting_id)
 		if val ~= mod._screen_effects_hidden then
 			mod.set_hide_screen_effects(val)
 		end
-	elseif setting_id == "fov_active" then
-		local val = mod:get("fov_active")
-		if val ~= mod._fov_active then
-			mod.set_fov_active(val)
-		end
 	elseif setting_id == "dof_active" then
 		local val = mod:get("dof_active")
 		if val ~= mod._dof_active then
@@ -1506,21 +1815,20 @@ mod.on_setting_changed = function(setting_id)
 	elseif setting_id == "slomo_scale" and mod._slomo_active and not mod._time_frozen then
 		local slomo_scale = mod:get("slomo_scale") or 0.10
 		_set_time_scale(slomo_scale)
-	elseif setting_id == "camera_fov" then
-		if mod._fov_active then
-			mod._fov_override = mod:get("camera_fov")
-		end
+	elseif setting_id == "camera_fov_offset" then
+		mod._fov_offset = mod:get("camera_fov_offset") or 0
 	elseif setting_id == "camera_tilt" then
 		mod._tilt_angle = mod:get("camera_tilt") or 0
 	elseif setting_id == "dof_focal_distance" then
 		mod._dof_distance = mod:get("dof_focal_distance") or 3.0
+	elseif setting_id == "lock_camera_in_menu" then
+		mod._camera_locked = mod:get("lock_camera_in_menu") ~= false
 	end
 
-	if mod._lantern_active and mod._lantern_unit and Unit.alive(mod._lantern_unit) then
-		local light_obj = Unit.light(mod._lantern_unit, 1)
-		if light_obj then
-			_apply_light_settings(light_obj)
-		end
+	if setting_id == "light_intensity" or setting_id == "light_radius"
+		or setting_id == "spot_angle" or setting_id == "light_color"
+		or setting_id == "light_type" or setting_id == "cast_shadows" then
+		mod.update_all_lights()
 	end
 end
 
@@ -1533,5 +1841,5 @@ mod.on_disabled = function(initial_call)
 end
 
 mod.on_unload = function(exit_game)
-	_cleanup_all()
+	_cleanup_all(not exit_game)
 end
