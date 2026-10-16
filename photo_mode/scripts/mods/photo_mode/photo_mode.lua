@@ -1,5 +1,6 @@
 local mod = get_mod("photo_mode")
 
+local ScriptCamera = require("scripts/foundation/utilities/script_camera")
 local ScriptViewport = require("scripts/foundation/utilities/script_viewport")
 local ScriptWorld = require("scripts/foundation/utilities/script_world")
 local MoodSettings = require("scripts/settings/camera/mood/mood_settings")
@@ -72,7 +73,178 @@ local function _get_level_world()
 		return Managers.world:world("level_world")
 	end
 
+	local replays = get_mod("Replays")
+	local PLAY = replays and replays.rec and replays.rec.playback
+	if PLAY and PLAY.viewport_world then
+		return PLAY.viewport_world
+	end
+
 	return nil
+end
+
+local function _is_replay_active()
+	local replays = get_mod("Replays")
+	local PLAY = replays and replays.rec and replays.rec.playback
+	if PLAY and PLAY.is_active and PLAY.is_active() then
+		return PLAY
+	end
+	return nil
+end
+
+local function _get_spectated_puppet_unit()
+	local replays = get_mod("Replays")
+	local P = replays and replays.rec and replays.rec.puppets
+	local PLAY = replays and replays.rec and replays.rec.playback
+	if not P or not PLAY then
+		return nil
+	end
+
+	local eid = PLAY.follow_eid or (PLAY.pov and PLAY.pov.eid)
+	if eid and P.puppets and P.puppets[eid] then
+		local p = P.puppets[eid]
+		local unit = p.unit or (type(p) == "userdata" and p)
+		if unit and Unit.alive(unit) then
+			return unit
+		end
+	end
+
+	local SP = replays.rec.spectate
+	if SP and eid and SP.unit_for then
+		local unit = SP.unit_for(eid)
+		if unit and Unit.alive(unit) then
+			return unit
+		end
+	end
+
+	if PLAY.resolve_local_unit then
+		local runit = PLAY.resolve_local_unit()
+		if runit and Unit.alive(runit) then
+			return runit
+		end
+	end
+
+	if PLAY.local_unit and Unit.alive(PLAY.local_unit) then
+		return PLAY.local_unit
+	end
+
+	return nil
+end
+
+local function _ensure_replay_free_cam(seed_pos, seed_rot)
+	local PLAY = _is_replay_active()
+	if PLAY and PLAY.pov_mode ~= "free" and PLAY.set_pov then
+		PLAY.set_pov("free")
+		if seed_pos and seed_rot and PLAY.viewport_world then
+			local viewport = ScriptWorld.global_free_flight_viewport(PLAY.viewport_world)
+			if viewport then
+				local cam = ScriptViewport.camera(viewport)
+				if cam then
+					local pose = Matrix4x4.from_quaternion_position(seed_rot, seed_pos)
+					ScriptCamera.set_local_pose(cam, pose)
+				end
+			end
+		end
+	end
+end
+
+local function _sync_replay_clock_scale()
+	local PLAY = _is_replay_active()
+	if PLAY and PLAY.set_clock_scale and PLAY.wanted_clock_scale then
+		PLAY.set_clock_scale(PLAY.wanted_clock_scale())
+	end
+end
+
+
+local function _get_own_character_unit()
+	local player = Managers.player and Managers.player:local_player(1)
+	local unit = player and player.player_unit
+	if not unit or not Unit.alive(unit) then
+		local PLAY = _is_replay_active()
+		if PLAY then
+			unit = PLAY.local_unit or (PLAY.resolve_local_unit and PLAY.resolve_local_unit())
+		end
+	end
+	return (unit and Unit.alive(unit)) and unit or nil
+end
+
+local function _is_camera_rig_active()
+	return (mod._tripod_active or mod._dolly_active or mod._orbit_active) == true
+end
+
+local function _update_rig_perspective(force_enable)
+	local should_be_3p = force_enable
+	if should_be_3p == nil then
+		should_be_3p = _is_camera_rig_active()
+	end
+
+	local perspectives = get_mod("Perspectives")
+
+	if should_be_3p then
+		if _is_camera_rig_active() and not mod._rig_forced_3p then
+			if perspectives and perspectives:is_enabled() and perspectives.autoswitch then
+				perspectives.autoswitch("photo_mode", true, true)
+			end
+
+			local unit = _get_own_character_unit()
+			if unit then
+				local fp_ext = ScriptUnit.has_extension(unit, "first_person_system")
+				if fp_ext then
+					mod._rig_prev_force_3p = fp_ext._force_third_person_mode
+					fp_ext._force_third_person_mode = true
+
+					local t = Managers.time and Managers.time:time("gameplay") or 0
+					if fp_ext._update_first_person_mode then
+						fp_ext._show_1p_equipment, fp_ext._wants_1p_camera = fp_ext:_update_first_person_mode(t)
+					end
+				end
+
+				local vl_ext = ScriptUnit.has_extension(unit, "visual_loadout_system")
+				if vl_ext and vl_ext.force_update_item_visibility then
+					vl_ext:force_update_item_visibility()
+				end
+			end
+
+			mod._rig_forced_3p = true
+		end
+	else
+		if mod._rig_forced_3p then
+			if perspectives and perspectives:is_enabled() and perspectives.clear_reason then
+				perspectives.clear_reason("photo_mode")
+			end
+
+			local unit = _get_own_character_unit()
+			if unit then
+				local fp_ext = ScriptUnit.has_extension(unit, "first_person_system")
+				if fp_ext then
+					local restore_3p = false
+					if perspectives and perspectives:is_enabled() and perspectives.is_requesting_third_person then
+						restore_3p = perspectives.is_requesting_third_person()
+					elseif mod._rig_prev_force_3p ~= nil then
+						restore_3p = mod._rig_prev_force_3p
+					end
+
+					if not restore_3p and Managers.state and Managers.state.mission and Managers.state.mission.force_third_person_mode then
+						restore_3p = Managers.state.mission:force_third_person_mode() or false
+					end
+
+					fp_ext._force_third_person_mode = restore_3p
+
+					local t = Managers.time and Managers.time:time("gameplay") or 0
+					if fp_ext._update_first_person_mode then
+						fp_ext._show_1p_equipment, fp_ext._wants_1p_camera = fp_ext:_update_first_person_mode(t)
+					end
+				end
+
+				local vl_ext = ScriptUnit.has_extension(unit, "visual_loadout_system")
+				if vl_ext and vl_ext.force_update_item_visibility then
+					vl_ext:force_update_item_visibility()
+				end
+			end
+
+			mod._rig_forced_3p = nil
+			mod._rig_prev_force_3p = nil
+		end
+	end
 end
 
 local function _get_camera_transform()
@@ -88,6 +260,35 @@ local function _get_camera_transform()
 		return mod._orbit_pos:unbox(), mod._orbit_rot:unbox()
 	end
 
+	local PLAY = _is_replay_active()
+	if PLAY and PLAY.pov_mode ~= "free" then
+		local player_manager = Managers.player
+		local player = player_manager and (player_manager.local_player_safe and player_manager:local_player_safe(1) or player_manager:local_player(1))
+		local camera_manager = Managers.state.camera
+		local viewport_name = player and player.viewport_name
+
+		if viewport_name and camera_manager and camera_manager:has_viewport(viewport_name) then
+			local pos = camera_manager:camera_position(viewport_name)
+			local rot = camera_manager:camera_rotation(viewport_name)
+			if pos and rot and Vector3.length_squared(pos) > 1 then
+				return pos, rot
+			end
+		end
+
+		if PLAY.pov and PLAY.pov.x then
+			local pos = Vector3(PLAY.pov.x, PLAY.pov.y, PLAY.pov.z)
+			local rot = Quaternion.from_yaw_pitch_roll(PLAY.pov.yaw or 0, PLAY.pov.pitch or 0, 0)
+			return pos, rot
+		end
+
+		local spectated_unit = _get_spectated_puppet_unit()
+		if spectated_unit and Unit.alive(spectated_unit) then
+			local pos = Unit.world_position(spectated_unit, 1) + Vector3(0, 0, 1.6)
+			local rot = Unit.world_rotation(spectated_unit, 1)
+			return pos, rot
+		end
+	end
+
 	local world = _get_level_world()
 
 	if world then
@@ -97,13 +298,17 @@ local function _get_camera_transform()
 			local cam = ScriptViewport.camera(ff_viewport)
 
 			if cam then
-				return Camera.world_position(cam), Camera.world_rotation(cam)
+				local pos = Camera.world_position(cam)
+				local rot = Camera.world_rotation(cam)
+				if pos and rot and Vector3.length_squared(pos) > 1 then
+					return pos, rot
+				end
 			end
 		end
 	end
 
 	local player_manager = Managers.player
-	local player = player_manager and player_manager:local_player(1)
+	local player = player_manager and (player_manager.local_player_safe and player_manager:local_player_safe(1) or player_manager:local_player(1))
 
 	if not player or not Managers.state.camera then
 		return nil, nil
@@ -371,13 +576,24 @@ local function _reset_time_state()
 	mod._time_frozen = false
 	mod._slomo_active = false
 	mod._step_frames_remaining = nil
+	local PLAY = _is_replay_active()
+	if PLAY then
+		PLAY.paused = false
+	end
 	_set_world_paused(false)
 	_set_time_scale(1.0)
+	_sync_replay_clock_scale()
 end
 
 local function _reset_hud_state()
 	mod._hud_hidden = false
 	mod._chat_hidden = false
+
+	local replays = get_mod("Replays")
+	local RUI = replays and replays.rec and replays.rec.ui
+	if RUI then
+		RUI.hud_hidden = false
+	end
 
 	if mod._screen_effects_hidden then
 		mod._screen_effects_hidden = false
@@ -468,6 +684,8 @@ local function _cleanup_all()
 	mod._orbit_center = nil
 	mod._orbit_angle = 0
 	mod._orbit_height = 0
+
+	_update_rig_perspective(false)
 end
 
 mod.reset_tab_camera = function(silent)
@@ -686,22 +904,27 @@ mod.set_freeze_time = function(enabled)
 	mod._time_frozen = enabled
 	mod:set("freeze_time", enabled)
 
-	if mod._time_frozen then
-		_set_world_paused(true)
-		_set_time_scale(0.00001)
-		mod:echo(mod:localize("msg_time_frozen"))
+	local PLAY = _is_replay_active()
+	if PLAY then
+		PLAY.paused = enabled
+		_sync_replay_clock_scale()
 	else
-		_set_world_paused(false)
-
-		if mod._slomo_active then
-			local slomo_scale = mod:get("slomo_scale") or 0.10
-			_set_time_scale(slomo_scale)
+		if mod._time_frozen then
+			_set_world_paused(true)
+			_set_time_scale(0.00001)
 		else
-			_set_time_scale(1.0)
-		end
+			_set_world_paused(false)
 
-		mod:echo(mod:localize("msg_time_resumed"))
+			if mod._slomo_active then
+				local slomo_scale = mod:get("slomo_scale") or 0.10
+				_set_time_scale(slomo_scale)
+			else
+				_set_time_scale(1.0)
+			end
+		end
 	end
+
+	mod:echo(mod:localize(enabled and "msg_time_frozen" or "msg_time_resumed"))
 end
 
 mod.toggle_freeze_time = function()
@@ -724,9 +947,16 @@ mod.step_frame = function()
 		mod:set("freeze_time", true)
 	end
 
+	mod._step_frames_remaining = (mod._step_frames_remaining or 0) + 2
+
 	_set_world_paused(false)
 	_set_time_scale(1.0)
-	mod._step_frames_remaining = (mod._step_frames_remaining or 0) + 2
+
+	local PLAY = _is_replay_active()
+	if PLAY then
+		PLAY.paused = false
+		_sync_replay_clock_scale()
+	end
 end
 
 mod.set_slomo_active = function(enabled)
@@ -737,18 +967,24 @@ mod.set_slomo_active = function(enabled)
 	mod._slomo_active = enabled
 	mod:set("slomo_active", enabled)
 
-	if not mod._time_frozen then
-		if mod._slomo_active then
-			local slomo_scale = mod:get("slomo_scale") or 0.10
-			_set_time_scale(slomo_scale)
-			mod:echo(mod:localize("msg_slomo_on"))
-		else
-			_set_time_scale(1.0)
-			mod:echo(mod:localize("msg_slomo_off"))
+	local PLAY = _is_replay_active()
+	if PLAY then
+		if enabled and not mod._time_frozen then
+			PLAY.paused = false
 		end
+		_sync_replay_clock_scale()
 	else
-		mod:echo(mod:localize(mod._slomo_active and "msg_slomo_on" or "msg_slomo_off"))
+		if not mod._time_frozen then
+			if mod._slomo_active then
+				local slomo_scale = mod:get("slomo_scale") or 0.10
+				_set_time_scale(slomo_scale)
+			else
+				_set_time_scale(1.0)
+			end
+		end
 	end
+
+	mod:echo(mod:localize(mod._slomo_active and "msg_slomo_on" or "msg_slomo_off"))
 end
 
 mod.toggle_slomo = function()
@@ -767,6 +1003,7 @@ mod.increase_slomo_speed = function()
 
 	if mod._slomo_active and not mod._time_frozen then
 		_set_time_scale(new_speed)
+		_sync_replay_clock_scale()
 	end
 
 	mod:echo(mod:localize("msg_slomo_speed") .. ": " .. string.format("%.2fx", new_speed))
@@ -784,6 +1021,7 @@ mod.decrease_slomo_speed = function()
 
 	if mod._slomo_active and not mod._time_frozen then
 		_set_time_scale(new_speed)
+		_sync_replay_clock_scale()
 	end
 
 	mod:echo(mod:localize("msg_slomo_speed") .. ": " .. string.format("%.2fx", new_speed))
@@ -797,6 +1035,12 @@ mod.set_hide_hud = function(enabled)
 	mod._hud_hidden = enabled
 	mod:set("hide_hud", enabled)
 	_ensure_hud_group()
+
+	local replays = get_mod("Replays")
+	local RUI = replays and replays.rec and replays.rec.ui
+	if RUI then
+		RUI.hud_hidden = enabled
+	end
 
 	local hud = Managers.ui and Managers.ui._hud
 	if hud then
@@ -992,6 +1236,10 @@ mod.set_tripod_active = function(enabled)
 	end
 
 	if enabled then
+		local pos, rot = _get_camera_transform()
+
+		_ensure_replay_free_cam(pos, rot)
+
 		if mod._dolly_active then
 			mod.set_dolly_active(false)
 		end
@@ -999,7 +1247,9 @@ mod.set_tripod_active = function(enabled)
 			mod.set_orbit_active(false)
 		end
 
-		local pos, rot = _get_camera_transform()
+		if not pos or not rot then
+			pos, rot = _get_camera_transform()
+		end
 
 		if not pos or not rot then
 			mod:set("tripod_active", false)
@@ -1010,12 +1260,14 @@ mod.set_tripod_active = function(enabled)
 		mod._tripod_rot = QuaternionBox(rot)
 		mod._tripod_active = true
 		mod:set("tripod_active", true)
+		_update_rig_perspective()
 		mod:echo(mod:localize("msg_tripod_on"))
 	else
 		mod._tripod_active = false
 		mod._tripod_pos = nil
 		mod._tripod_rot = nil
 		mod:set("tripod_active", false)
+		_update_rig_perspective()
 		mod:echo(mod:localize("msg_tripod_off"))
 	end
 end
@@ -1062,7 +1314,8 @@ mod.dolly_add_point = function(label)
 		fov_offset = mod._fov_offset or 0,
 	})
 
-	mod:echo(mod:localize("msg_dolly_point_added") .. ": Point " .. tostring(name) .. " (" .. tostring(#mod._dolly_points) .. " total)")
+	mod:echo(mod:localize("msg_dolly_point_added") ..
+	": Point " .. tostring(name) .. " (" .. tostring(#mod._dolly_points) .. " total)")
 end
 
 mod.dolly_clear_points = function()
@@ -1101,6 +1354,8 @@ mod.set_dolly_active = function(enabled)
 	end
 
 	if enabled then
+		_ensure_replay_free_cam()
+
 		if mod._tripod_active then
 			mod.set_tripod_active(false)
 		end
@@ -1130,6 +1385,7 @@ mod.set_dolly_active = function(enabled)
 
 		mod._dolly_active = true
 		mod:set("dolly_active", true)
+		_update_rig_perspective()
 		mod:echo(mod:localize("msg_dolly_started"))
 	else
 		mod._dolly_active = false
@@ -1137,6 +1393,7 @@ mod.set_dolly_active = function(enabled)
 		mod._dolly_rot = nil
 		mod._fov_offset = mod:get("camera_fov_offset") or 0
 		mod:set("dolly_active", false)
+		_update_rig_perspective()
 		mod:echo(mod:localize("msg_dolly_stopped"))
 	end
 end
@@ -1149,6 +1406,11 @@ local function _get_orbit_center()
 	local target_mode = mod:get("orbit_target_mode") or "character"
 
 	if target_mode == "character" then
+		local spectated_unit = _get_spectated_puppet_unit()
+		if spectated_unit and Unit.alive(spectated_unit) then
+			return Unit.world_position(spectated_unit, 1) + Vector3(0, 0, 1.1)
+		end
+
 		local player = Managers.player and Managers.player:local_player(1)
 		local unit = player and player.player_unit
 		if unit and Unit.alive(unit) then
@@ -1158,6 +1420,11 @@ local function _get_orbit_center()
 
 	if mod._orbit_center then
 		return mod._orbit_center:unbox()
+	end
+
+	local spectated_unit = _get_spectated_puppet_unit()
+	if spectated_unit and Unit.alive(spectated_unit) then
+		return Unit.world_position(spectated_unit, 1) + Vector3(0, 0, 1.1)
 	end
 
 	local player = Managers.player and Managers.player:local_player(1)
@@ -1232,6 +1499,10 @@ mod.set_orbit_active = function(enabled)
 	end
 
 	if enabled then
+		local pos, rot = _get_camera_transform()
+
+		_ensure_replay_free_cam(pos, rot)
+
 		if mod._tripod_active then
 			mod.set_tripod_active(false)
 		end
@@ -1251,7 +1522,9 @@ mod.set_orbit_active = function(enabled)
 			mod._orbit_center = Vector3Box(center)
 		end
 
-		local pos, rot = _get_camera_transform()
+		if not pos or not rot then
+			pos, rot = _get_camera_transform()
+		end
 		if pos and rot then
 			local offset = pos - center
 			local r = math.sqrt(offset.x * offset.x + offset.y * offset.y)
@@ -1266,12 +1539,14 @@ mod.set_orbit_active = function(enabled)
 
 		mod._orbit_active = true
 		mod:set("orbit_active", true)
+		_update_rig_perspective()
 		mod:echo(mod:localize("msg_orbit_started"))
 	else
 		mod._orbit_active = false
 		mod._orbit_pos = nil
 		mod._orbit_rot = nil
 		mod:set("orbit_active", false)
+		_update_rig_perspective()
 		mod:echo(mod:localize("msg_orbit_stopped"))
 	end
 end
@@ -1490,6 +1765,13 @@ mod.update = function(dt)
 		if mod._step_frames_remaining == 0 then
 			_set_world_paused(true)
 			_set_time_scale(0.00001)
+
+			local PLAY = _is_replay_active()
+			if PLAY then
+				PLAY.paused = true
+				_sync_replay_clock_scale()
+			end
+
 			mod._step_frames_remaining = nil
 		end
 	end
@@ -1512,6 +1794,24 @@ mod.update = function(dt)
 			else
 				Unit.set_local_position(mod._lantern_unit, 1, pos)
 				Unit.set_local_rotation(mod._lantern_unit, 1, rot)
+			end
+		end
+	end
+
+	if _is_camera_rig_active() then
+		local unit = _get_own_character_unit()
+		if unit then
+			local fp_ext = ScriptUnit.has_extension(unit, "first_person_system")
+			if fp_ext and not fp_ext._force_third_person_mode then
+				fp_ext._force_third_person_mode = true
+				local t = Managers.time and Managers.time:time("gameplay") or 0
+				if fp_ext._update_first_person_mode then
+					fp_ext._show_1p_equipment, fp_ext._wants_1p_camera = fp_ext:_update_first_person_mode(t)
+				end
+				local vl_ext = ScriptUnit.has_extension(unit, "visual_loadout_system")
+				if vl_ext and vl_ext.force_update_item_visibility then
+					vl_ext:force_update_item_visibility()
+				end
 			end
 		end
 	end
@@ -1635,16 +1935,34 @@ mod.update = function(dt)
 		local world = _get_level_world()
 
 		if world then
-			local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+			local ff_viewport = ScriptWorld.global_free_flight_viewport and
+			ScriptWorld.global_free_flight_viewport(world)
 
 			if ff_viewport then
 				local cam = ScriptViewport.camera(ff_viewport)
 
 				if cam then
 					Camera.set_vertical_fov(cam, math.clamp(math.rad(65 + mod._fov_offset), math.rad(10), math.rad(150)))
+					mod._fov_applied = true
 				end
 			end
 		end
+	elseif mod._fov_applied then
+		local world = _get_level_world()
+
+		if world then
+			local ff_viewport = ScriptWorld.global_free_flight_viewport and
+			ScriptWorld.global_free_flight_viewport(world)
+
+			if ff_viewport then
+				local cam = ScriptViewport.camera(ff_viewport)
+
+				if cam then
+					Camera.set_vertical_fov(cam, math.rad(65))
+				end
+			end
+		end
+		mod._fov_applied = nil
 	end
 end
 
@@ -1753,21 +2071,23 @@ mod:hook("CameraHandler", "update", function(func, self, dt, t, player_orientati
 	return func(self, dt, t, player_orientation, input)
 end)
 
-mod:hook("DefaultPlayerOrientation", "pre_update", function(func, self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
-	if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
-		input = input:null_service()
-	end
+mod:hook("DefaultPlayerOrientation", "pre_update",
+	function(func, self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
+		if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
+			input = input:null_service()
+		end
 
-	return func(self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
-end)
+		return func(self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
+	end)
 
-mod:hook("HubPlayerOrientation", "pre_update", function(func, self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
-	if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
-		input = input:null_service()
-	end
+mod:hook("HubPlayerOrientation", "pre_update",
+	function(func, self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
+		if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
+			input = input:null_service()
+		end
 
-	return func(self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
-end)
+		return func(self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
+	end)
 
 mod:hook("ConstantElementChat", "draw", function(func, self, dt, t, ui_renderer, render_settings, input_service)
 	if mod:is_enabled() and mod._chat_hidden then
@@ -1785,64 +2105,67 @@ mod:hook("ConstantElementChat", "should_draw", function(func, self)
 	return func(self)
 end)
 
-mod:hook("CameraManager", "_update_camera_properties", function(func, self, camera, shadow_cull_camera, camera_nodes, camera_data, viewport_name)
-	if mod:is_enabled() then
-		if mod._tripod_active and mod._tripod_pos and mod._tripod_rot then
-			camera_data.position = mod._tripod_pos:unbox()
-			camera_data.rotation = mod._tripod_rot:unbox()
-		elseif mod._dolly_active and mod._dolly_pos and mod._dolly_rot then
-			camera_data.position = mod._dolly_pos:unbox()
-			camera_data.rotation = mod._dolly_rot:unbox()
-		elseif mod._orbit_active and mod._orbit_pos and mod._orbit_rot then
-			camera_data.position = mod._orbit_pos:unbox()
-			camera_data.rotation = mod._orbit_rot:unbox()
-		elseif mod._tilt_angle and mod._tilt_angle ~= 0 and camera_data.rotation then
-			local roll_offset = Quaternion.from_yaw_pitch_roll(0, 0, math.rad(mod._tilt_angle))
-			camera_data.rotation = Quaternion.multiply(camera_data.rotation, roll_offset)
+mod:hook("CameraManager", "_update_camera_properties",
+	function(func, self, camera, shadow_cull_camera, camera_nodes, camera_data, viewport_name)
+		if mod:is_enabled() then
+			if mod._tripod_active and mod._tripod_pos and mod._tripod_rot then
+				camera_data.position = mod._tripod_pos:unbox()
+				camera_data.rotation = mod._tripod_rot:unbox()
+			elseif mod._dolly_active and mod._dolly_pos and mod._dolly_rot then
+				camera_data.position = mod._dolly_pos:unbox()
+				camera_data.rotation = mod._dolly_rot:unbox()
+			elseif mod._orbit_active and mod._orbit_pos and mod._orbit_rot then
+				camera_data.position = mod._orbit_pos:unbox()
+				camera_data.rotation = mod._orbit_rot:unbox()
+			elseif mod._tilt_angle and mod._tilt_angle ~= 0 and camera_data.rotation then
+				local roll_offset = Quaternion.from_yaw_pitch_roll(0, 0, math.rad(mod._tilt_angle))
+				camera_data.rotation = Quaternion.multiply(camera_data.rotation, roll_offset)
+			end
+
+			if mod._fov_offset and mod._fov_offset ~= 0 and camera_data.vertical_fov then
+				camera_data.vertical_fov = math.clamp(camera_data.vertical_fov + math.rad(mod._fov_offset), math.rad(10),
+					math.rad(150))
+			end
 		end
 
-		if mod._fov_offset and mod._fov_offset ~= 0 and camera_data.vertical_fov then
-			camera_data.vertical_fov = math.clamp(camera_data.vertical_fov + math.rad(mod._fov_offset), math.rad(10), math.rad(150))
+		func(self, camera, shadow_cull_camera, camera_nodes, camera_data, viewport_name)
+	end)
+
+mod:hook_safe("CameraManager", "shading_callback",
+	function(self, world, shading_env, viewport, default_shading_environment_resource)
+		if self._world ~= world then
+			return
 		end
-	end
 
-	func(self, camera, shadow_cull_camera, camera_nodes, camera_data, viewport_name)
-end)
+		if not mod:is_enabled() then
+			if mod._dof_was_applied then
+				ShadingEnvironment.set_scalar(shading_env, "dof_enabled", 0)
+				ShadingEnvironment.apply(shading_env)
+				mod._dof_was_applied = false
+			end
+			return
+		end
 
-mod:hook_safe("CameraManager", "shading_callback", function(self, world, shading_env, viewport, default_shading_environment_resource)
-	if self._world ~= world then
-		return
-	end
+		if mod._dof_active then
+			local focal_distance = mod._dof_distance or mod:get("dof_focal_distance") or 3.0
+			local focal_region = mod:get("dof_focal_region") or 4.0
+			local blur_amount = mod:get("dof_blur_amount") or 1.0
 
-	if not mod:is_enabled() then
-		if mod._dof_was_applied then
+			ShadingEnvironment.set_scalar(shading_env, "dof_enabled", 1)
+			ShadingEnvironment.set_scalar(shading_env, "dof_focal_distance", focal_distance)
+			ShadingEnvironment.set_scalar(shading_env, "dof_focal_region", focal_region)
+			ShadingEnvironment.set_scalar(shading_env, "dof_focal_region_start", 2)
+			ShadingEnvironment.set_scalar(shading_env, "dof_focal_region_end", 2)
+			ShadingEnvironment.set_scalar(shading_env, "dof_focal_near_scale", blur_amount)
+			ShadingEnvironment.set_scalar(shading_env, "dof_focal_far_scale", blur_amount)
+			ShadingEnvironment.apply(shading_env)
+			mod._dof_was_applied = true
+		elseif mod._dof_was_applied then
 			ShadingEnvironment.set_scalar(shading_env, "dof_enabled", 0)
 			ShadingEnvironment.apply(shading_env)
 			mod._dof_was_applied = false
 		end
-		return
-	end
-
-	if mod._dof_active then
-		local focal_distance = mod._dof_distance or mod:get("dof_focal_distance") or 3.0
-		local focal_region = mod:get("dof_focal_region") or 4.0
-		local blur_amount = mod:get("dof_blur_amount") or 1.0
-
-		ShadingEnvironment.set_scalar(shading_env, "dof_enabled", 1)
-		ShadingEnvironment.set_scalar(shading_env, "dof_focal_distance", focal_distance)
-		ShadingEnvironment.set_scalar(shading_env, "dof_focal_region", focal_region)
-		ShadingEnvironment.set_scalar(shading_env, "dof_focal_region_start", 2)
-		ShadingEnvironment.set_scalar(shading_env, "dof_focal_region_end", 2)
-		ShadingEnvironment.set_scalar(shading_env, "dof_focal_near_scale", blur_amount)
-		ShadingEnvironment.set_scalar(shading_env, "dof_focal_far_scale", blur_amount)
-		ShadingEnvironment.apply(shading_env)
-		mod._dof_was_applied = true
-	elseif mod._dof_was_applied then
-		ShadingEnvironment.set_scalar(shading_env, "dof_enabled", 0)
-		ShadingEnvironment.apply(shading_env)
-		mod._dof_was_applied = false
-	end
-end)
+	end)
 
 mod:hook("FreeFlightManager", "_update_camera", function(func, self, input, dt, camera_data)
 	if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
@@ -2010,6 +2333,7 @@ mod.on_setting_changed = function(setting_id)
 	elseif setting_id == "slomo_scale" and mod._slomo_active and not mod._time_frozen then
 		local slomo_scale = mod:get("slomo_scale") or 0.10
 		_set_time_scale(slomo_scale)
+		_sync_replay_clock_scale()
 	elseif setting_id == "camera_fov_offset" then
 		mod._fov_offset = mod:get("camera_fov_offset") or 0
 	elseif setting_id == "camera_tilt" then
@@ -2037,9 +2361,201 @@ mod.on_disabled = function(initial_call)
 	_cleanup_all()
 end
 
+local _replays_hooked = false
+
+local function _setup_replays_integration()
+	if _replays_hooked then
+		return
+	end
+
+	local replays = get_mod("Replays")
+	local PLAY = replays and replays.rec and replays.rec.playback
+
+	if not PLAY or type(PLAY.drive_free_cam) ~= "function" then
+		return
+	end
+
+	_replays_hooked = true
+
+	local function _hook_play(name, hook_fn)
+		if type(PLAY[name]) == "function" then
+			mod:hook(PLAY, name, hook_fn)
+		end
+	end
+
+	_hook_play("drive_free_cam", function(func, dt)
+		if not mod:is_enabled() then
+			return func(dt)
+		end
+
+		local pos = nil
+		local rot = nil
+
+		if mod._tripod_active and mod._tripod_pos and mod._tripod_rot then
+			pos = mod._tripod_pos:unbox()
+			rot = mod._tripod_rot:unbox()
+		elseif mod._dolly_active and mod._dolly_pos and mod._dolly_rot then
+			pos = mod._dolly_pos:unbox()
+			rot = mod._dolly_rot:unbox()
+		elseif mod._orbit_active and mod._orbit_pos and mod._orbit_rot then
+			pos = mod._orbit_pos:unbox()
+			rot = mod._orbit_rot:unbox()
+		end
+
+		if pos and rot then
+			if mod._tilt_angle and mod._tilt_angle ~= 0 then
+				local roll_offset = Quaternion.from_yaw_pitch_roll(0, 0, math.rad(mod._tilt_angle))
+				rot = Quaternion.multiply(rot, roll_offset)
+			end
+
+			local world = PLAY.viewport_world
+			if world then
+				local viewport = ScriptWorld.global_free_flight_viewport(world)
+				if viewport then
+					local cam = ScriptViewport.camera(viewport)
+					if cam then
+						local pose = Matrix4x4.from_quaternion_position(rot, pos)
+						ScriptCamera.set_local_pose(cam, pose)
+
+						if PLAY.terrain_observer then
+							TerrainDecoration.move_observer(world, PLAY.terrain_observer, pos)
+						end
+
+						if PLAY.scatter_observer then
+							ScatterSystem.move_observer(World.scatter_system(world), PLAY.scatter_observer, pos, rot)
+						end
+
+						local ww = Managers.world:wwise_world(world)
+						if ww then
+							WwiseWorld.set_listener(ww, 0, pose)
+						end
+
+						return
+					end
+				end
+			end
+		end
+
+		func(dt)
+
+		if mod._tilt_angle and mod._tilt_angle ~= 0 then
+			local world = PLAY.viewport_world
+			if world then
+				local viewport = ScriptWorld.global_free_flight_viewport(world)
+				if viewport then
+					local cam = ScriptViewport.camera(viewport)
+					if cam then
+						local pose = Camera.local_pose(cam)
+						local roll_offset = Quaternion.from_yaw_pitch_roll(0, 0, math.rad(mod._tilt_angle))
+						local current_rot = Matrix4x4.rotation(pose)
+						local new_rot = Quaternion.multiply(current_rot, roll_offset)
+						Matrix4x4.set_rotation(pose, new_rot)
+						ScriptCamera.set_local_pose(cam, pose)
+					end
+				end
+			end
+		end
+	end)
+
+	_hook_play("speed", function(func)
+		if mod:is_enabled() and PLAY.state == "playing" and not PLAY.at_end then
+			if mod._step_frames_remaining and mod._step_frames_remaining > 0 then
+				return 1.0
+			end
+
+			if mod._time_frozen or PLAY.paused then
+				return 0
+			end
+
+			if mod._slomo_active then
+				return mod:get("slomo_scale") or 0.10
+			end
+		end
+
+		return func()
+	end)
+
+	_hook_play("free_cam_frozen", function(func)
+		if mod:is_enabled() and mod._menu_open and mod._camera_locked then
+			return true
+		end
+
+		return func()
+	end)
+
+	_hook_play("ui_owns_input", function(func)
+		if mod:is_enabled() and mod._menu_open then
+			return true
+		end
+
+		return func()
+	end)
+
+	_hook_play("poll_view_buttons", function(func)
+		if mod:is_enabled() and (mod._menu_open or mod._tripod_active or mod._dolly_active or mod._orbit_active) then
+			PLAY.view_forward_held = false
+			PLAY.view_back_held = false
+			return
+		end
+
+		return func()
+	end)
+
+	_hook_play("keys_ready", function(func)
+		if mod:is_enabled() and mod._menu_open then
+			return false
+		end
+
+		return func()
+	end)
+
+	_hook_play("cycle_pov", function(func, direction)
+		if mod:is_enabled() and mod._menu_open then
+			return false
+		end
+
+		return func(direction)
+	end)
+
+	_hook_play("toggle_pause", function(func)
+		func()
+		if mod:is_enabled() then
+			mod._time_frozen = PLAY.paused
+			mod:set("freeze_time", PLAY.paused, true)
+			_sync_replay_clock_scale()
+		end
+	end)
+
+	_hook_play("wanted_clock_scale", function(func)
+		if mod:is_enabled() and PLAY.state == "playing" and not PLAY.at_end then
+			if mod._step_frames_remaining and mod._step_frames_remaining > 0 then
+				return 1.0
+			end
+
+			if mod._time_frozen or PLAY.paused then
+				return 0.001
+			end
+
+			if mod._slomo_active then
+				return mod:get("slomo_scale") or 0.10
+			end
+		end
+
+		return func()
+	end)
+
+	_hook_play("stop", function(func, reason)
+		if mod:is_enabled() then
+			_cleanup_all()
+		end
+		return func(reason)
+	end)
+end
+
 mod.on_all_mods_loaded = function()
 	_ensure_hud_group()
 	_cleanup_all()
+	_setup_replays_integration()
 end
 
 mod.on_unload = function(exit_game)
@@ -2047,3 +2563,4 @@ mod.on_unload = function(exit_game)
 end
 
 _ensure_hud_group()
+_setup_replays_integration()
