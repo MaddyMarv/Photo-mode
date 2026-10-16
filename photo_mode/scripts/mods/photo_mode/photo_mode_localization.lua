@@ -329,6 +329,24 @@ return {
 	undo_light_description = {
 		en = "Deletes the last placed light.",
 	},
+	delete_selected_light = {
+		en = "Delete Selected Light",
+	},
+	delete_selected_light_description = {
+		en = "Deletes the currently selected light.",
+	},
+	select_prev_light = {
+		en = "Select Previous Light",
+	},
+	select_prev_light_description = {
+		en = "Cycles to the previous placed light for editing.",
+	},
+	select_next_light = {
+		en = "Select Next Light",
+	},
+	select_next_light_description = {
+		en = "Cycles to the next placed light for editing.",
+	},
 	clear_lights = {
 		en = "Clear All Lights",
 	},
@@ -400,6 +418,12 @@ return {
 	},
 	msg_lights_cleared = {
 		en = "All Lights Cleared",
+	},
+	msg_selected_light = {
+		en = "Selected Light",
+	},
+	msg_light_deleted = {
+		en = "Light Deleted",
 	},
 	msg_lantern_on = {
 		en = "Camera Lantern: Active",

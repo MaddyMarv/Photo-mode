@@ -367,6 +367,12 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	y = y + 24
 
 	local num_lights = #mod._placed_lights
+	local sel_idx = mod._selected_light_index or num_lights
+	if num_lights > 0 and (sel_idx < 1 or sel_idx > num_lights) then
+		sel_idx = num_lights
+		mod._selected_light_index = sel_idx
+	end
+
 	_button(ctx, "place_light", string.format("+ Light (%d)", num_lights), cx_start, y, third_w, 32, false, function()
 		mod.place_light()
 	end)
@@ -377,6 +383,35 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 		mod.clear_lights()
 	end)
 	y = y + 38
+	local arrow_w = 34
+	local del_btn_w = 64
+	local gap = 8
+	local selector_mid_w = w - (arrow_w * 2 + del_btn_w + gap * 3)
+	_button(ctx, "prev_light", "<", cx_start, y, arrow_w, 28, false, function()
+		if mod.select_prev_light then
+			mod.select_prev_light()
+		end
+	end)
+
+	local sel_label = num_lights > 0 and string.format("Editing: #%d of %d", sel_idx, num_lights) or "No Placed Lights (Editing Next / Lantern)"
+	_button(ctx, "selected_light_display", sel_label, cx_start + arrow_w + gap, y, selector_mid_w, 28, num_lights > 0, function()
+		if num_lights > 0 and mod.select_next_light then
+			mod.select_next_light()
+		end
+	end)
+
+	_button(ctx, "next_light", ">", cx_start + arrow_w + gap + selector_mid_w + gap, y, arrow_w, 28, false, function()
+		if mod.select_next_light then
+			mod.select_next_light()
+		end
+	end)
+
+	_button(ctx, "delete_selected_light", "Delete", cx_start + arrow_w + gap + selector_mid_w + gap + arrow_w + gap, y, del_btn_w, 28, false, function()
+		if mod.delete_selected_light then
+			mod.delete_selected_light()
+		end
+	end)
+	y = y + 34
 
 	local lantern_active = mod._lantern_active
 	_button(ctx, "toggle_lantern", lantern_active and "Lantern: ON" or "Lantern: OFF", cx_start, y, third_w, 32, lantern_active, function()
@@ -401,7 +436,8 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	end)
 	y = y + 44
 
-	_section_header(ctx.items, "LIGHT PROPERTIES", cx_start, y, w)
+	local header_title = num_lights > 0 and string.format("LIGHT PROPERTIES (LIGHT #%d)", sel_idx) or "LIGHT PROPERTIES (NEXT LIGHT / LANTERN)"
+	_section_header(ctx.items, header_title, cx_start, y, w)
 	y = y + 24
 
 	local intensity = mod:get("light_intensity") or 100

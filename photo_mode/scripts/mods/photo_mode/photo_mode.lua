@@ -34,6 +34,7 @@ mod._screen_effects_hidden = false
 mod._step_frames_remaining = nil
 
 mod._placed_lights = {}
+mod._selected_light_index = nil
 mod._lantern_active = false
 mod._lantern_unit = nil
 
@@ -169,22 +170,41 @@ local function _set_world_paused(paused)
 	end
 end
 
-local function _apply_light_settings(light_obj)
-	if not light_obj then
-		return
-	end
-
-	local light_type = mod:get("light_type") or "spot"
-	local intensity = mod:get("light_intensity") or 100
-	local radius = mod:get("light_radius") or 20
-	local spot_angle = mod:get("spot_angle") or 45
+local function _get_current_light_settings()
+	local color_raw = mod:get("light_color") or { 255, 255, 245, 220 }
 	local cast_shadows = mod:get("cast_shadows")
 
 	if cast_shadows == nil then
 		cast_shadows = true
 	end
 
-	local color_raw = mod:get("light_color") or { 255, 255, 245, 220 }
+	return {
+		light_type = mod:get("light_type") or "spot",
+		intensity = mod:get("light_intensity") or 100,
+		radius = mod:get("light_radius") or 20,
+		spot_angle = mod:get("spot_angle") or 45,
+		cast_shadows = cast_shadows,
+		color = { color_raw[1] or 255, color_raw[2] or 255, color_raw[3] or 245, color_raw[4] or 220 },
+	}
+end
+
+local function _apply_light_settings(light_obj, settings)
+	if not light_obj then
+		return
+	end
+
+	local s = settings or _get_current_light_settings()
+	local light_type = s.light_type or "spot"
+	local intensity = s.intensity or 100
+	local radius = s.radius or 20
+	local spot_angle = s.spot_angle or 45
+	local cast_shadows = s.cast_shadows
+
+	if cast_shadows == nil then
+		cast_shadows = true
+	end
+
+	local color_raw = s.color or { 255, 255, 245, 220 }
 	local r = (color_raw[2] or 255) / 255
 	local g = (color_raw[3] or 255) / 255
 	local b = (color_raw[4] or 255) / 255
@@ -206,6 +226,71 @@ local function _apply_light_settings(light_obj)
 	end
 end
 
+local function _sync_settings_from_light(s)
+	if not s then
+		return
+	end
+
+	mod:set("light_type", s.light_type, true)
+	mod:set("light_intensity", s.intensity, true)
+	mod:set("light_radius", s.radius, true)
+	mod:set("spot_angle", s.spot_angle, true)
+	mod:set("cast_shadows", s.cast_shadows, true)
+	if s.color then
+		mod:set("light_color", { s.color[1] or 255, s.color[2] or 255, s.color[3] or 245, s.color[4] or 220 }, true)
+	end
+end
+
+mod.select_light = function(index, silent)
+	local count = #mod._placed_lights
+	if count == 0 then
+		mod._selected_light_index = nil
+		return
+	end
+
+	index = math.clamp(index or count, 1, count)
+	mod._selected_light_index = index
+
+	local light_data = mod._placed_lights[index]
+	if light_data and light_data.settings then
+		_sync_settings_from_light(light_data.settings)
+	end
+
+	if not silent then
+		mod:echo(mod:localize("msg_selected_light") .. " #" .. tostring(index) .. " of " .. tostring(count))
+	end
+end
+
+mod.select_prev_light = function()
+	local count = #mod._placed_lights
+	if count == 0 then
+		return
+	end
+
+	local cur = mod._selected_light_index or count
+	local target = cur - 1
+	if target < 1 then
+		target = count
+	end
+
+	mod.select_light(target)
+end
+
+mod.select_next_light = function()
+	local count = #mod._placed_lights
+	if count == 0 then
+		return
+	end
+
+	local cur = mod._selected_light_index or count
+	local target = cur + 1
+	if target > count then
+		target = 1
+	end
+
+	mod.select_light(target)
+end
+
 mod.update_all_lights = function()
 	if mod._lantern_active and mod._lantern_unit and Unit.alive(mod._lantern_unit) then
 		local light_obj = Unit.light(mod._lantern_unit, 1)
@@ -214,10 +299,15 @@ mod.update_all_lights = function()
 		end
 	end
 
-	for i = 1, #mod._placed_lights do
-		local light_data = mod._placed_lights[i]
+	local count = #mod._placed_lights
+	if count > 0 then
+		local target_idx = math.clamp(mod._selected_light_index or count, 1, count)
+		mod._selected_light_index = target_idx
+
+		local light_data = mod._placed_lights[target_idx]
 		if light_data and light_data.unit and Unit.alive(light_data.unit) and light_data.light_obj then
-			_apply_light_settings(light_data.light_obj)
+			light_data.settings = _get_current_light_settings()
+			_apply_light_settings(light_data.light_obj, light_data.settings)
 		end
 	end
 end
@@ -335,11 +425,7 @@ local function _reset_camera_state()
 	mod._original_render_dof = nil
 end
 
-local function _cleanup_all(is_reloading)
-	if is_reloading then
-		return
-	end
-
+local function _cleanup_all()
 	mod.close_photo_menu()
 	_reset_time_state()
 	_reset_hud_state()
@@ -1278,11 +1364,14 @@ mod.place_light = function()
 		local light_obj = Unit.light(unit, 1)
 
 		if light_obj then
-			_apply_light_settings(light_obj)
+			local light_settings = _get_current_light_settings()
+			_apply_light_settings(light_obj, light_settings)
 			table.insert(mod._placed_lights, {
 				unit = unit,
 				light_obj = light_obj,
+				settings = light_settings,
 			})
+			mod._selected_light_index = #mod._placed_lights
 			mod:echo(mod:localize("msg_light_placed") .. " (" .. tostring(#mod._placed_lights) .. ")")
 		end
 	end
@@ -1303,8 +1392,45 @@ mod.undo_light = function()
 			World.destroy_unit(world, light_data.unit)
 		end
 
-		mod:echo(mod:localize("msg_light_undone") .. " (" .. tostring(#mod._placed_lights) .. " left)")
+		local remaining = #mod._placed_lights
+		if remaining > 0 then
+			local sel = math.clamp(mod._selected_light_index or remaining, 1, remaining)
+			mod.select_light(sel, true)
+		else
+			mod._selected_light_index = nil
+		end
+
+		mod:echo(mod:localize("msg_light_undone") .. " (" .. tostring(remaining) .. " left)")
 	end
+end
+
+mod.delete_selected_light = function()
+	if not mod:is_enabled() then
+		return
+	end
+
+	local count = #mod._placed_lights
+	if count == 0 then
+		return
+	end
+
+	local sel_idx = math.clamp(mod._selected_light_index or count, 1, count)
+	local world = _get_level_world()
+	local light_data = table.remove(mod._placed_lights, sel_idx)
+
+	if world and light_data and light_data.unit and Unit.alive(light_data.unit) then
+		World.destroy_unit(world, light_data.unit)
+	end
+
+	local remaining = #mod._placed_lights
+	if remaining > 0 then
+		local new_sel = math.clamp(sel_idx, 1, remaining)
+		mod.select_light(new_sel, true)
+	else
+		mod._selected_light_index = nil
+	end
+
+	mod:echo(mod:localize("msg_light_deleted") .. " #" .. tostring(sel_idx) .. " (" .. tostring(remaining) .. " left)")
 end
 
 mod.clear_lights = function()
@@ -1320,6 +1446,17 @@ mod.clear_lights = function()
 	end
 
 	table.clear(mod._placed_lights)
+	mod._selected_light_index = nil
+
+	if world then
+		local units = World.units(world)
+		for i = 1, #units do
+			local u = units[i]
+			if Unit.alive(u) and Unit.is_a(u, "core/units/light") then
+				World.destroy_unit(world, u)
+			end
+		end
+	end
 
 	if not mod._silent_clear and had_lights then
 		mod:echo(mod:localize("msg_lights_cleared"))
@@ -1902,10 +2039,11 @@ end
 
 mod.on_all_mods_loaded = function()
 	_ensure_hud_group()
+	_cleanup_all()
 end
 
 mod.on_unload = function(exit_game)
-	_cleanup_all(not exit_game)
+	_cleanup_all()
 end
 
 _ensure_hud_group()
