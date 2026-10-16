@@ -543,6 +543,7 @@ local function _ensure_hud_group()
 		end
 		found_group.visible_elements = {
 			HudElementPhotoModeMenu = true,
+			HudElementReplaysMenu = true,
 		}
 
 		table.insert(visibility_groups, 1, found_group)
@@ -1027,6 +1028,8 @@ mod.decrease_slomo_speed = function()
 	mod:echo(mod:localize("msg_slomo_speed") .. ": " .. string.format("%.2fx", new_speed))
 end
 
+local _in_sync_hud = false
+
 mod.set_hide_hud = function(enabled)
 	if not mod:is_enabled() then
 		return
@@ -1036,10 +1039,14 @@ mod.set_hide_hud = function(enabled)
 	mod:set("hide_hud", enabled)
 	_ensure_hud_group()
 
-	local replays = get_mod("Replays")
-	local RUI = replays and replays.rec and replays.rec.ui
-	if RUI then
-		RUI.hud_hidden = enabled
+	if not _in_sync_hud then
+		_in_sync_hud = true
+		local replays = get_mod("Replays")
+		local RUI = replays and replays.rec and replays.rec.ui
+		if RUI then
+			RUI.hud_hidden = enabled
+		end
+		_in_sync_hud = false
 	end
 
 	local hud = Managers.ui and Managers.ui._hud
@@ -1975,6 +1982,7 @@ mod:hook("UIHud", "init", function(func, self, elements, visibility_groups, para
 		end,
 		visible_elements = {
 			HudElementPhotoModeMenu = true,
+			HudElementReplaysMenu = true,
 		},
 	})
 
@@ -2000,19 +2008,28 @@ mod:hook_safe("UIHud", "_update_element_visibility", function(self)
 	if self._elements and self._elements.HudElementPhotoModeMenu then
 		self._currently_visible_elements.HudElementPhotoModeMenu = true
 	end
+	if self._elements and self._elements.HudElementReplaysMenu then
+		self._currently_visible_elements.HudElementReplaysMenu = true
+	end
 end)
 
 mod:hook("UIHud", "draw", function(func, self, dt, t, input_service)
 	if mod:is_enabled() and mod._hud_hidden then
-		local menu_element = self._elements and self._elements.HudElementPhotoModeMenu
-		if menu_element and menu_element.draw then
-			local is_world_enabled = Managers.world:is_world_enabled(self._world_name)
-			if is_world_enabled then
-				local ui_renderer = self._ui_renderer
-				local render_settings = self._render_settings
-				local saved_start_layer = render_settings and render_settings.start_layer
-				if ui_renderer and render_settings then
+		local is_world_enabled = Managers.world:is_world_enabled(self._world_name)
+		if is_world_enabled then
+			local ui_renderer = self._ui_renderer
+			local render_settings = self._render_settings
+			local saved_start_layer = render_settings and render_settings.start_layer
+			if ui_renderer and render_settings then
+				local menu_element = self._elements and self._elements.HudElementPhotoModeMenu
+				if menu_element and menu_element.draw then
 					menu_element:draw(dt, t, ui_renderer, render_settings, input_service)
+					render_settings.start_layer = saved_start_layer
+				end
+
+				local replays_menu = self._elements and self._elements.HudElementReplaysMenu
+				if replays_menu and replays_menu.draw then
+					replays_menu:draw(dt, t, ui_renderer, render_settings, input_service)
 					render_settings.start_layer = saved_start_layer
 				end
 			end
@@ -2501,21 +2518,20 @@ local function _setup_replays_integration()
 		return func()
 	end)
 
-	_hook_play("keys_ready", function(func)
-		if mod:is_enabled() and mod._menu_open then
-			return false
-		end
+	local replays = get_mod("Replays")
+	local RUI = replays and replays.rec and replays.rec.ui
+	if RUI and type(RUI.toggle_hud) == "function" then
+		mod:hook(RUI, "toggle_hud", function(func)
+			local result = func()
+			if mod:is_enabled() and not _in_sync_hud then
+				_in_sync_hud = true
+				mod.set_hide_hud(RUI.hud_hidden)
+				_in_sync_hud = false
+			end
+			return result
+		end)
+	end
 
-		return func()
-	end)
-
-	_hook_play("cycle_pov", function(func, direction)
-		if mod:is_enabled() and mod._menu_open then
-			return false
-		end
-
-		return func(direction)
-	end)
 
 	_hook_play("toggle_pause", function(func)
 		func()
