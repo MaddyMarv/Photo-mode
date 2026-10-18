@@ -1621,6 +1621,8 @@ mod.set_dolly_active = function(enabled)
 			mod._fov_offset = start_pt.fov_offset
 		end
 
+		mod._selected_dolly_index = 1
+
 		mod._dolly_active = true
 		mod:set("dolly_active", true)
 		_update_rig_perspective()
@@ -2199,6 +2201,9 @@ mod.update = function(dt)
 						local cur_offset = math.floor(pt1.fov_offset + (pt2.fov_offset - pt1.fov_offset) * seg_t + 0.5)
 						mod._fov_offset = cur_offset
 					end
+
+					local active_idx = (seg_t >= 0.5) and (seg_index + 1) or seg_index
+					mod._selected_dolly_index = math.clamp(active_idx, 1, #mod._dolly_points)
 				end
 			end
 
