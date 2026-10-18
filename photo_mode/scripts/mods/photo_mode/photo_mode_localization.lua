@@ -15,25 +15,25 @@ return {
 		en = "Photo Mode Menu Keybind",
 	},
 	toggle_photo_menu_description = {
-		en = "Hotkey to open or close the on-screen Photo Mode controls menu.",
+		en = "Hotkey to toggle the menu.",
 	},
 	lock_camera_in_menu = {
 		en = "Lock Camera in Menu",
 	},
 	lock_camera_in_menu_description = {
-		en = "Locks camera view rotation while the Photo Mode menu is open.",
+		en = "Locks camera while menu is open.",
 	},
 	allow_in_game_actions = {
 		en = "Allow In-Game Actions",
 	},
 	allow_in_game_actions_description = {
-		en = "Allows attacks, aiming, reload, and weapon switching while the photo menu is open (actions are automatically blocked when clicking on the menu).",
+		en = "Allows weapon attacks while menu is open.",
 	},
 	toggle_in_game_actions = {
 		en = "Toggle In-Game Actions Keybind",
 	},
 	toggle_in_game_actions_description = {
-		en = "Hotkey to toggle in-game actions between allowed and blocked.",
+		en = "Hotkey to toggle in-game actions.",
 	},
 	msg_actions_allowed = {
 		en = "In-game actions: Allowed",
@@ -180,13 +180,13 @@ return {
 		en = "Hide All Screen Effects",
 	},
 	hide_screen_effects_description = {
-		en = "Disables all screen blood splatters, damage vignettes, suppression, peril heat, and fullscreen moods.",
+		en = "Hides blood, vignettes, and screen effects.",
 	},
 	toggle_hide_screen_effects = {
 		en = "Hide Screen Effects Keybind",
 	},
 	toggle_hide_screen_effects_description = {
-		en = "Hotkey to toggle all screen effects.",
+		en = "Hotkey to toggle screen effects.",
 	},
 	msg_screen_effects_hidden = {
 		en = "Screen Effects: Hidden",
@@ -201,25 +201,25 @@ return {
 		en = "Zoom In",
 	},
 	zoom_in_description = {
-		en = "Narrows FOV by 5 degrees.",
+		en = "Zooms in by 5 degrees.",
 	},
 	zoom_out = {
 		en = "Zoom Out",
 	},
 	zoom_out_description = {
-		en = "Widens FOV by 5 degrees.",
+		en = "Zooms out by 5 degrees.",
 	},
 	reset_fov = {
 		en = "Reset FOV",
 	},
 	reset_fov_description = {
-		en = "Resets FOV offset back to 0 (normal game FOV).",
+		en = "Resets FOV back to normal.",
 	},
 	camera_fov_offset = {
 		en = "FOV Offset",
 	},
 	camera_fov_offset_description = {
-		en = "Adjusts field of view up or down relative to normal (-60° to +60°). 0 is default.",
+		en = "Adjusts field of view.",
 	},
 	msg_fov_changed = {
 		en = "FOV Offset",
@@ -321,19 +321,19 @@ return {
 		en = "Mouse Smoothing",
 	},
 	mouse_smoothing_description = {
-		en = "Smooths camera mouse look to eliminate jitter and produce fluid, cinematic camera sweeps.",
+		en = "Smooths out camera movement.",
 	},
 	toggle_mouse_smoothing = {
-		en = "Toggle Mouse Smoothing Keybind",
+		en = "Mouse Smoothing Keybind",
 	},
 	toggle_mouse_smoothing_description = {
-		en = "Hotkey to toggle mouse smoothing on or off.",
+		en = "Hotkey to toggle mouse smoothing.",
 	},
 	mouse_smoothing_amount = {
 		en = "Smoothing Strength",
 	},
 	mouse_smoothing_amount_description = {
-		en = "Higher values create heavier, more cinematic camera gliding. Lower values are more responsive.",
+		en = "How smooth camera movement is.",
 	},
 	msg_mouse_smoothing_on = {
 		en = "Mouse Smoothing: Active",
@@ -363,19 +363,19 @@ return {
 		en = "Delete Selected Light",
 	},
 	delete_selected_light_description = {
-		en = "Deletes the currently selected light.",
+		en = "Deletes selected light.",
 	},
 	select_prev_light = {
 		en = "Select Previous Light",
 	},
 	select_prev_light_description = {
-		en = "Cycles to the previous placed light for editing.",
+		en = "Selects previous light.",
 	},
 	select_next_light = {
 		en = "Select Next Light",
 	},
 	select_next_light_description = {
-		en = "Cycles to the next placed light for editing.",
+		en = "Selects next light.",
 	},
 	clear_lights = {
 		en = "Clear All Lights",
@@ -426,7 +426,7 @@ return {
 		en = "Light Distance",
 	},
 	light_radius_description = {
-		en = "How far the light reaches in meters.",
+		en = "How far the light reaches.",
 	},
 	spot_angle = {
 		en = "Spotlight Angle",
@@ -468,16 +468,16 @@ return {
 		en = "Tripod Lock",
 	},
 	tripod_active_description = {
-		en = "Locks camera frozen in world space.",
+		en = "Locks camera in place.",
 	},
 	toggle_tripod = {
 		en = "Tripod Keybind",
 	},
 	toggle_tripod_description = {
-		en = "Hotkey to lock/unlock camera in place.",
+		en = "Hotkey to lock camera in place.",
 	},
 	msg_tripod_on = {
-		en = "Tripod: Locked in Place",
+		en = "Tripod: Locked",
 	},
 	msg_tripod_off = {
 		en = "Tripod: Unlocked",
@@ -495,61 +495,61 @@ return {
 		en = "Play/Stop Dolly Keybind",
 	},
 	toggle_dolly_description = {
-		en = "Hotkey to play or stop dolly track.",
+		en = "Hotkey to play or stop dolly.",
 	},
 	dolly_add_point = {
 		en = "Add Waypoint Keybind",
 	},
 	dolly_add_point_description = {
-		en = "Adds current camera as next point (A, B, C...).",
+		en = "Adds camera as a waypoint.",
 	},
 	dolly_clear_points = {
 		en = "Clear Waypoints Keybind",
 	},
 	dolly_clear_points_description = {
-		en = "Deletes all stored waypoints.",
+		en = "Deletes all waypoints.",
 	},
 	dolly_select_prev_point = {
 		en = "Previous Waypoint Keybind",
 	},
 	dolly_select_prev_point_description = {
-		en = "Selects the previous dolly waypoint.",
+		en = "Selects previous waypoint.",
 	},
 	dolly_select_next_point = {
 		en = "Next Waypoint Keybind",
 	},
 	dolly_select_next_point_description = {
-		en = "Selects the next dolly waypoint.",
+		en = "Selects next waypoint.",
 	},
 	dolly_delete_selected_point = {
-		en = "Delete Selected Waypoint Keybind",
+		en = "Delete Waypoint Keybind",
 	},
 	dolly_delete_selected_point_description = {
-		en = "Deletes the currently selected dolly waypoint.",
+		en = "Deletes selected waypoint.",
 	},
 	dolly_goto_selected_point = {
-		en = "Go to Selected Waypoint Keybind",
+		en = "Go to Waypoint Keybind",
 	},
 	dolly_goto_selected_point_description = {
-		en = "Snaps camera view to the selected waypoint.",
+		en = "Moves camera to selected waypoint.",
 	},
 	dolly_update_selected_point = {
-		en = "Update Selected Waypoint Keybind",
+		en = "Update Waypoint Keybind",
 	},
 	dolly_update_selected_point_description = {
-		en = "Re-records current camera position, angle, and FOV onto the selected waypoint.",
+		en = "Saves camera to selected waypoint.",
 	},
 	dolly_duration = {
 		en = "Dolly Duration",
 	},
 	dolly_duration_description = {
-		en = "Total travel time in seconds.",
+		en = "Travel time in seconds.",
 	},
 	dolly_motion = {
 		en = "Dolly Motion",
 	},
 	dolly_motion_description = {
-		en = "Movement easing style.",
+		en = "How camera moves between points.",
 	},
 	dolly_motion_smooth = {
 		en = "Smooth Ease",
@@ -570,7 +570,7 @@ return {
 		en = "Time Between Points",
 	},
 	dolly_time_inbetween_description = {
-		en = "Time in seconds spent at each waypoint before snapping to the next in instant mode.",
+		en = "Wait time at each point.",
 	},
 	orbit_group = {
 		en = "Orbit Rig (Circular)",
@@ -579,31 +579,31 @@ return {
 		en = "Orbit Rig",
 	},
 	orbit_active_description = {
-		en = "Circles camera continuously around a target center.",
+		en = "Circles camera around a target.",
 	},
 	toggle_orbit = {
 		en = "Play/Stop Orbit Keybind",
 	},
 	toggle_orbit_description = {
-		en = "Hotkey to start or stop orbit circling.",
+		en = "Hotkey to start or stop orbit.",
 	},
 	toggle_orbit_pause = {
-		en = "Pause / Resume Orbit",
+		en = "Pause Orbit Keybind",
 	},
 	toggle_orbit_pause_description = {
-		en = "Hotkey to pause or resume camera rotation along the orbit circle.",
+		en = "Hotkey to pause/resume orbit.",
 	},
 	orbit_set_center = {
 		en = "Set Orbit Center Keybind",
 	},
 	orbit_set_center_description = {
-		en = "Locks orbit pivot to the point you are looking at (or character).",
+		en = "Sets orbit center where you're looking.",
 	},
 	orbit_target_mode = {
 		en = "Orbit Target",
 	},
 	orbit_target_mode_description = {
-		en = "Choose whether to orbit your character or a custom recorded point.",
+		en = "Orbit character or custom point.",
 	},
 	orbit_target_character = {
 		en = "Your Character",
@@ -615,7 +615,7 @@ return {
 		en = "Camera Facing",
 	},
 	orbit_facing_description = {
-		en = "Choose whether camera faces inward toward the subject or outward.",
+		en = "Face toward center or outward.",
 	},
 	orbit_facing_inward = {
 		en = "Inward (Subject)",
@@ -627,25 +627,25 @@ return {
 		en = "Orbit Speed",
 	},
 	orbit_speed_description = {
-		en = "Rotation speed in degrees per second.",
+		en = "How fast orbit spins.",
 	},
 	orbit_radius = {
 		en = "Orbit Distance",
 	},
 	orbit_radius_description = {
-		en = "Distance in meters from the orbit center.",
+		en = "Distance from center.",
 	},
 	orbit_height = {
 		en = "Orbit Height Offset",
 	},
 	orbit_height_description = {
-		en = "Height offset above or below the center point in meters.",
+		en = "Height above or below center.",
 	},
 	orbit_direction = {
 		en = "Orbit Direction",
 	},
 	orbit_direction_description = {
-		en = "Rotation direction around the center.",
+		en = "Clockwise or counter-clockwise.",
 	},
 	orbit_dir_cw = {
 		en = "Clockwise",
@@ -654,13 +654,13 @@ return {
 		en = "Counter-Clockwise",
 	},
 	msg_orbit_center_set = {
-		en = "Orbit: Pivot Center Locked",
+		en = "Orbit: Center Set",
 	},
 	msg_orbit_no_center = {
-		en = "Orbit: Target center needed first",
+		en = "Orbit: Set a center point first",
 	},
 	msg_orbit_started = {
-		en = "Orbit: Circling Target",
+		en = "Orbit: Started",
 	},
 	msg_orbit_stopped = {
 		en = "Orbit: Stopped",
@@ -681,28 +681,28 @@ return {
 		en = "Dolly: Selected Waypoint",
 	},
 	msg_dolly_point_updated = {
-		en = "Dolly: Waypoint Updated to Current View",
+		en = "Dolly: Waypoint Updated",
 	},
 	msg_dolly_point_teleported = {
-		en = "Dolly: Camera Moved to Waypoint",
+		en = "Dolly: Moved to Waypoint",
 	},
 	msg_dolly_points_cleared = {
 		en = "Dolly: All Waypoints Cleared",
 	},
 	msg_dolly_started = {
-		en = "Dolly: Gliding Path",
+		en = "Dolly: Started",
 	},
 	msg_dolly_stopped = {
 		en = "Dolly: Stopped",
 	},
 	msg_dolly_missing_points = {
-		en = "Dolly: Need at least 2 points (A and B)",
+		en = "Dolly: Need at least 2 waypoints",
 	},
 	msg_dolly_no_points = {
 		en = "Dolly: No waypoints saved",
 	},
 	msg_dolly_requires_free_cam = {
-		en = "Dolly: Free Flight camera is required to preview waypoints",
+		en = "Dolly: Requires Free Cam to preview",
 	},
 	msg_dolly_duration = {
 		en = "Dolly Duration",
