@@ -314,6 +314,36 @@ return {
 	msg_dof_distance = {
 		en = "Focus Distance",
 	},
+	mouse_smoothing_settings = {
+		en = "Mouse Look Smoothing",
+	},
+	mouse_smoothing = {
+		en = "Mouse Smoothing",
+	},
+	mouse_smoothing_description = {
+		en = "Smooths camera mouse look to eliminate jitter and produce fluid, cinematic camera sweeps.",
+	},
+	toggle_mouse_smoothing = {
+		en = "Toggle Mouse Smoothing Keybind",
+	},
+	toggle_mouse_smoothing_description = {
+		en = "Hotkey to toggle mouse smoothing on or off.",
+	},
+	mouse_smoothing_amount = {
+		en = "Smoothing Strength",
+	},
+	mouse_smoothing_amount_description = {
+		en = "Higher values create heavier, more cinematic camera gliding. Lower values are more responsive.",
+	},
+	msg_mouse_smoothing_on = {
+		en = "Mouse Smoothing: Active",
+	},
+	msg_mouse_smoothing_off = {
+		en = "Mouse Smoothing: Inactive",
+	},
+	msg_mouse_smoothing_amount = {
+		en = "Smoothing Strength",
+	},
 	lighting_actions = {
 		en = "Lighting Controls",
 	},
@@ -479,6 +509,36 @@ return {
 	dolly_clear_points_description = {
 		en = "Deletes all stored waypoints.",
 	},
+	dolly_select_prev_point = {
+		en = "Previous Waypoint Keybind",
+	},
+	dolly_select_prev_point_description = {
+		en = "Selects the previous dolly waypoint.",
+	},
+	dolly_select_next_point = {
+		en = "Next Waypoint Keybind",
+	},
+	dolly_select_next_point_description = {
+		en = "Selects the next dolly waypoint.",
+	},
+	dolly_delete_selected_point = {
+		en = "Delete Selected Waypoint Keybind",
+	},
+	dolly_delete_selected_point_description = {
+		en = "Deletes the currently selected dolly waypoint.",
+	},
+	dolly_goto_selected_point = {
+		en = "Go to Selected Waypoint Keybind",
+	},
+	dolly_goto_selected_point_description = {
+		en = "Snaps camera view to the selected waypoint.",
+	},
+	dolly_update_selected_point = {
+		en = "Update Selected Waypoint Keybind",
+	},
+	dolly_update_selected_point_description = {
+		en = "Re-records current camera position, angle, and FOV onto the selected waypoint.",
+	},
 	dolly_duration = {
 		en = "Dolly Duration",
 	},
@@ -590,6 +650,18 @@ return {
 	msg_dolly_point_added = {
 		en = "Dolly: Waypoint Saved",
 	},
+	msg_dolly_point_deleted = {
+		en = "Dolly: Waypoint Deleted",
+	},
+	msg_dolly_point_selected = {
+		en = "Dolly: Selected Waypoint",
+	},
+	msg_dolly_point_updated = {
+		en = "Dolly: Waypoint Updated to Current View",
+	},
+	msg_dolly_point_teleported = {
+		en = "Dolly: Camera Moved to Waypoint",
+	},
 	msg_dolly_points_cleared = {
 		en = "Dolly: All Waypoints Cleared",
 	},
@@ -604,6 +676,9 @@ return {
 	},
 	msg_dolly_no_points = {
 		en = "Dolly: No waypoints saved",
+	},
+	msg_dolly_requires_free_cam = {
+		en = "Dolly: Free Flight camera is required to preview waypoints",
 	},
 	msg_dolly_duration = {
 		en = "Dolly Duration",

@@ -45,6 +45,8 @@ mod._dof_active = false
 mod._dof_distance = mod:get("dof_focal_distance") or 3.0
 mod._dof_was_applied = false
 mod._original_render_dof = nil
+mod._mouse_smoothing = mod:get("mouse_smoothing") or false
+mod._mouse_smoothing_amount = mod:get("mouse_smoothing_amount") or 0.65
 
 mod._tripod_active = false
 mod._tripod_pos = nil
@@ -58,6 +60,7 @@ mod._dolly_pos = nil
 mod._dolly_rot = nil
 mod._dolly_dists = nil
 mod._dolly_total_dist = 0
+mod._selected_dolly_index = nil
 
 mod._orbit_active = false
 mod._orbit_pos = nil
@@ -145,6 +148,32 @@ local function _ensure_replay_free_cam(seed_pos, seed_rot)
 			end
 		end
 	end
+end
+
+local function _ensure_free_flight_active(seed_pos, seed_rot)
+	local PLAY = _is_replay_active()
+	if PLAY then
+		_ensure_replay_free_cam(seed_pos, seed_rot)
+		return true
+	end
+
+	local ff = Managers.free_flight
+	if ff then
+		if not ff:is_in_free_flight() then
+			local cam_ff = get_mod("camera_freeflight")
+			if cam_ff and cam_ff.is_in_free_flight and not cam_ff:is_in_free_flight() and cam_ff.toggle_freeflight then
+				cam_ff:toggle_freeflight()
+			end
+
+			if not ff:is_in_free_flight() and ff._enter_global_free_flight and ff._free_flight_cameras and ff._free_flight_cameras.global then
+				ff:_enter_global_free_flight(ff._free_flight_cameras.global)
+			end
+		end
+
+		return ff:is_in_free_flight()
+	end
+
+	return false
 end
 
 local function _sync_replay_clock_scale()
@@ -663,6 +692,7 @@ local function _cleanup_all()
 	mod._dolly_rot = nil
 	mod._dolly_dists = nil
 	mod._dolly_total_dist = 0
+	mod._selected_dolly_index = nil
 	table.clear(mod._dolly_points)
 
 	mod:set("freeze_time", false)
@@ -687,6 +717,7 @@ local function _cleanup_all()
 	mod._orbit_height = 0
 
 	_update_rig_perspective(false)
+	mod._reset_mouse_smoothing()
 end
 
 mod.reset_tab_camera = function(silent)
@@ -719,6 +750,13 @@ mod.reset_tab_camera = function(silent)
 	mod:set("dof_focal_distance", 3.0, true)
 	mod:set("dof_focal_region", 4.0, true)
 	mod:set("dof_blur_amount", 1.0, true)
+
+	if mod._mouse_smoothing then
+		mod.set_mouse_smoothing(false)
+	end
+	mod._mouse_smoothing_amount = 0.65
+	mod:set("mouse_smoothing_amount", 0.65, true)
+	mod._reset_mouse_smoothing()
 	mod._silent_reset = nil
 
 	if not silent then
@@ -803,6 +841,7 @@ mod.reset_tab_rigs = function(silent)
 		mod.set_dolly_active(false)
 	end
 	table.clear(mod._dolly_points)
+	mod._selected_dolly_index = nil
 	mod:set("dolly_duration", 8.0, true)
 	mod:set("dolly_motion", "smooth", true)
 
@@ -854,6 +893,7 @@ mod.open_photo_menu = function()
 	end
 
 	mod._menu_open = true
+	mod._reset_mouse_smoothing()
 	local s = rawget(_G, "_photo_mode_session")
 	if s then
 		s.menu_open = true
@@ -864,6 +904,7 @@ mod.close_photo_menu = function()
 	if mod._menu_open then
 		mod._menu_open = false
 		mod._menu_hovered = false
+		mod._reset_mouse_smoothing()
 		local s = rawget(_G, "_photo_mode_session")
 		if s then
 			s.menu_open = false
@@ -1320,6 +1361,7 @@ mod.dolly_add_point = function(label)
 		rot = QuaternionBox(rot),
 		fov_offset = mod._fov_offset or 0,
 	})
+	mod._selected_dolly_index = #mod._dolly_points
 
 	mod:echo(mod:localize("msg_dolly_point_added") ..
 	": Point " .. tostring(name) .. " (" .. tostring(#mod._dolly_points) .. " total)")
@@ -1331,6 +1373,7 @@ mod.dolly_clear_points = function()
 	end
 
 	table.clear(mod._dolly_points)
+	mod._selected_dolly_index = nil
 	mod.set_dolly_active(false)
 	mod:echo(mod:localize("msg_dolly_points_cleared"))
 end
@@ -1355,13 +1398,195 @@ mod.dolly_list_points = function()
 	mod:echo("Dolly (" .. tostring(count) .. "): " .. table.concat(names, ", "))
 end
 
+mod.select_dolly_point = function(index, silent)
+	local count = #mod._dolly_points
+	if count == 0 then
+		mod._selected_dolly_index = nil
+		return
+	end
+
+	index = math.clamp(index or count, 1, count)
+	mod._selected_dolly_index = index
+
+	local pt = mod._dolly_points[index]
+	if not silent and pt then
+		mod:echo(mod:localize("msg_dolly_point_selected") .. ": Point " .. tostring(pt.name) .. " (" .. tostring(index) .. " of " .. tostring(count) .. ")")
+	end
+end
+
+mod.select_prev_dolly_point = function()
+	local count = #mod._dolly_points
+	if count == 0 then
+		return
+	end
+
+	local cur = mod._selected_dolly_index or count
+	local target = cur - 1
+	if target < 1 then
+		target = count
+	end
+
+	mod.select_dolly_point(target)
+end
+
+mod.select_next_dolly_point = function()
+	local count = #mod._dolly_points
+	if count == 0 then
+		return
+	end
+
+	local cur = mod._selected_dolly_index or count
+	local target = cur + 1
+	if target > count then
+		target = 1
+	end
+
+	mod.select_dolly_point(target)
+end
+
+mod.delete_selected_dolly_point = function()
+	if not mod:is_enabled() then
+		return
+	end
+
+	local count = #mod._dolly_points
+	if count == 0 then
+		mod:echo(mod:localize("msg_dolly_no_points"))
+		return
+	end
+
+	local sel_idx = math.clamp(mod._selected_dolly_index or count, 1, count)
+	local removed_pt = table.remove(mod._dolly_points, sel_idx)
+
+	local remaining = #mod._dolly_points
+	if remaining == 0 then
+		mod._selected_dolly_index = nil
+		mod.set_dolly_active(false)
+	else
+		mod._selected_dolly_index = math.clamp(sel_idx, 1, remaining)
+		if mod._dolly_active then
+			if remaining < 2 then
+				mod.set_dolly_active(false)
+			else
+				mod._dolly_dists, mod._dolly_total_dist = _calculate_dolly_distances()
+			end
+		end
+	end
+
+	local pt_name = removed_pt and removed_pt.name or tostring(sel_idx)
+	mod:echo(mod:localize("msg_dolly_point_deleted") .. ": Point " .. tostring(pt_name) .. " (" .. tostring(remaining) .. " left)")
+end
+
+mod.dolly_goto_point = function(index)
+	if not mod:is_enabled() then
+		return
+	end
+
+	local count = #mod._dolly_points
+	if count == 0 then
+		mod:echo(mod:localize("msg_dolly_no_points"))
+		return
+	end
+
+	index = math.clamp(index or mod._selected_dolly_index or 1, 1, count)
+	mod._selected_dolly_index = index
+
+	local pt = mod._dolly_points[index]
+	if not pt then
+		return
+	end
+
+	if mod._dolly_active then
+		mod.set_dolly_active(false)
+	end
+	if mod._tripod_active then
+		mod.set_tripod_active(false)
+	end
+	if mod._orbit_active then
+		mod.set_orbit_active(false)
+	end
+
+	local pos = pt.pos:unbox()
+	local rot = pt.rot:unbox()
+
+	local is_free_flight = _ensure_free_flight_active(pos, rot)
+	if not is_free_flight then
+		mod:echo(mod:localize("msg_dolly_requires_free_cam"))
+		return
+	end
+
+	if Managers.free_flight and Managers.free_flight.teleport_camera then
+		Managers.free_flight:teleport_camera("global", pos, rot)
+	else
+		local world = _get_level_world()
+		if world then
+			local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+			if ff_viewport then
+				local cam = ScriptViewport.camera(ff_viewport)
+				if cam then
+					local pose = Matrix4x4.from_quaternion_position(rot, pos)
+					ScriptCamera.set_local_pose(cam, pose)
+				end
+			end
+		end
+	end
+
+	local PLAY = _is_replay_active()
+	if PLAY and PLAY.viewport_world then
+		local viewport = ScriptWorld.global_free_flight_viewport(PLAY.viewport_world)
+		if viewport then
+			local cam = ScriptViewport.camera(viewport)
+			if cam then
+				local pose = Matrix4x4.from_quaternion_position(rot, pos)
+				ScriptCamera.set_local_pose(cam, pose)
+			end
+		end
+	end
+
+	if pt.fov_offset then
+		mod._fov_offset = pt.fov_offset
+		mod:set("camera_fov_offset", pt.fov_offset, true)
+	end
+
+	mod:echo(mod:localize("msg_dolly_point_teleported") .. ": Point " .. tostring(pt.name))
+end
+
+mod.dolly_update_point = function(index)
+	if not mod:is_enabled() then
+		return
+	end
+
+	local count = #mod._dolly_points
+	if count == 0 then
+		mod:echo(mod:localize("msg_dolly_no_points"))
+		return
+	end
+
+	index = math.clamp(index or mod._selected_dolly_index or 1, 1, count)
+	local pos, rot = _get_camera_transform()
+	if not pos or not rot then
+		return
+	end
+
+	local pt = mod._dolly_points[index]
+	pt.pos = Vector3Box(pos)
+	pt.rot = QuaternionBox(rot)
+	pt.fov_offset = mod._fov_offset or 0
+
+	if mod._dolly_active then
+		mod._dolly_dists, mod._dolly_total_dist = _calculate_dolly_distances()
+	end
+
+	mod:echo(mod:localize("msg_dolly_point_updated") .. ": Point " .. tostring(pt.name))
+end
+
 mod.set_dolly_active = function(enabled)
 	if not mod:is_enabled() then
 		return
 	end
 
 	if enabled then
-		_ensure_replay_free_cam()
+		_ensure_free_flight_active()
 
 		if mod._tripod_active then
 			mod.set_tripod_active(false)
@@ -1626,6 +1851,27 @@ mod.dec_dof_distance = function()
 
 	mod._dof_distance = new_dist
 	mod:echo(mod:localize("msg_dof_distance") .. ": " .. string.format("%.1fm", new_dist))
+end
+
+mod.set_mouse_smoothing = function(enabled)
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._mouse_smoothing = enabled
+	mod:set("mouse_smoothing", enabled)
+
+	if not enabled then
+		mod._reset_mouse_smoothing()
+	end
+
+	if not mod._silent_reset then
+		mod:echo(mod:localize(enabled and "msg_mouse_smoothing_on" or "msg_mouse_smoothing_off"))
+	end
+end
+
+mod.toggle_mouse_smoothing = function()
+	mod.set_mouse_smoothing(not mod._mouse_smoothing)
 end
 
 mod.place_light = function()
@@ -2088,10 +2334,189 @@ mod:hook("CameraHandler", "update", function(func, self, dt, t, player_orientati
 	return func(self, dt, t, player_orientation, input)
 end)
 
+local _ff_smooth_x = 0
+local _ff_smooth_y = 0
+local _player_smooth_x = 0
+local _player_smooth_y = 0
+
+mod._reset_mouse_smoothing = function()
+	_ff_smooth_x = 0
+	_ff_smooth_y = 0
+	_player_smooth_x = 0
+	_player_smooth_y = 0
+end
+
+local function _calculate_smoothed_look(raw_look, prev_x, prev_y, dt, strength)
+	local raw_x = Vector3.x(raw_look)
+	local raw_y = Vector3.y(raw_look)
+
+	if raw_x == 0 and raw_y == 0 and math.abs(prev_x) < 0.0001 and math.abs(prev_y) < 0.0001 then
+		return Vector3(0, 0, 0), 0, 0
+	end
+
+	local real_dt = (Managers.time and Managers.time:has_timer("main") and Managers.time:delta_time("main")) or dt
+	local clamped_dt = math.clamp(real_dt or 0.016, 0.001, 0.1)
+	local decay = math.pow(math.clamp(strength, 0.05, 0.98), clamped_dt * 60)
+	local inv_decay = 1 - decay
+
+	local new_x = prev_x * decay + raw_x * inv_decay
+	local new_y = prev_y * decay + raw_y * inv_decay
+
+	if math.abs(new_x) < 0.0001 and raw_x == 0 then
+		new_x = 0
+	end
+	if math.abs(new_y) < 0.0001 and raw_y == 0 then
+		new_y = 0
+	end
+
+	return Vector3(new_x, new_y, 0), new_x, new_y
+end
+
+local _zero_vector = Vector3.zero()
+local _safe_ff_null_service = {
+	input = nil,
+	get = function(self, action_name)
+		local val = self.input and self.input:get(action_name)
+		local input_type = type(val)
+
+		if input_type == "number" then
+			return 0
+		elseif input_type == "boolean" then
+			return false
+		elseif input_type == "userdata" or input_type == "Vector3" then
+			return _zero_vector
+		end
+
+		return 0
+	end,
+	null_service = function(self)
+		return self
+	end,
+}
+
+mod:hook_require("scripts/foundation/managers/free_flight/free_flight_default_input", function(instance)
+	instance.null_service = function(self)
+		_safe_ff_null_service.input = self
+		return _safe_ff_null_service
+	end
+end)
+
+mod:hook("FreeFlightDefaultInput", "null_service", function(func, self)
+	_safe_ff_null_service.input = self
+	return _safe_ff_null_service
+end)
+
+local _ff_current_input = nil
+local _ff_current_dt = 0.016
+local _ff_input_proxy = {}
+local _ff_proxy_mt = {
+	__index = function(t, key)
+		local orig = _ff_current_input
+		if not orig then
+			return nil
+		end
+		local val = orig[key]
+		if type(val) == "function" then
+			return function(self_or_t, ...)
+				local actual_self = (self_or_t == t) and orig or self_or_t
+				return val(actual_self, ...)
+			end
+		end
+		return val
+	end
+}
+setmetatable(_ff_input_proxy, _ff_proxy_mt)
+
+function _ff_input_proxy:get(action_name, ...)
+	if not _ff_current_input then
+		return false
+	end
+
+	if action_name == "look" then
+		local raw_look = _ff_current_input:get("look", ...)
+		local smoothed_look, new_x, new_y = _calculate_smoothed_look(
+			raw_look,
+			_ff_smooth_x,
+			_ff_smooth_y,
+			_ff_current_dt,
+			mod._mouse_smoothing_amount or 0.65
+		)
+		_ff_smooth_x = new_x
+		_ff_smooth_y = new_y
+		return smoothed_look
+	end
+
+	return _ff_current_input:get(action_name, ...)
+end
+
+function _ff_input_proxy:null_service()
+	_safe_ff_null_service.input = _ff_current_input
+	return _safe_ff_null_service
+end
+
+local function _wrap_freeflight_input(input, dt)
+	_ff_current_input = input
+	_ff_current_dt = dt
+	return _ff_input_proxy
+end
+
+local _player_current_input = nil
+local _player_current_dt = 0.016
+local _player_input_proxy = {}
+local _player_proxy_mt = {
+	__index = function(t, key)
+		local orig = _player_current_input
+		if not orig then
+			return nil
+		end
+		local val = orig[key]
+		if type(val) == "function" then
+			return function(self_or_t, ...)
+				local actual_self = (self_or_t == t) and orig or self_or_t
+				return val(actual_self, ...)
+			end
+		end
+		return val
+	end
+}
+setmetatable(_player_input_proxy, _player_proxy_mt)
+
+function _player_input_proxy:get(action_name, ...)
+	if not _player_current_input then
+		return false
+	end
+
+	if action_name == "look" or action_name == "look_ranged" or action_name == "look_ranged_alternate_fire" then
+		local raw_look = _player_current_input:get(action_name, ...)
+		local smoothed_look, new_x, new_y = _calculate_smoothed_look(
+			raw_look,
+			_player_smooth_x,
+			_player_smooth_y,
+			_player_current_dt,
+			mod._mouse_smoothing_amount or 0.65
+		)
+		_player_smooth_x = new_x
+		_player_smooth_y = new_y
+		return smoothed_look
+	end
+
+	return _player_current_input:get(action_name, ...)
+end
+
+local function _wrap_player_input(input, dt)
+	_player_current_input = input
+	_player_current_dt = dt
+	return _player_input_proxy
+end
+
 mod:hook("DefaultPlayerOrientation", "pre_update",
 	function(func, self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
-		if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
-			input = input:null_service()
+		if input and mod:is_enabled() then
+			if mod._menu_open and mod._camera_locked then
+				input = input:null_service()
+			elseif mod._mouse_smoothing then
+				input = _wrap_player_input(input, main_dt)
+			end
 		end
 
 		return func(self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
@@ -2099,8 +2524,12 @@ mod:hook("DefaultPlayerOrientation", "pre_update",
 
 mod:hook("HubPlayerOrientation", "pre_update",
 	function(func, self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
-		if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
-			input = input:null_service()
+		if input and mod:is_enabled() then
+			if mod._menu_open and mod._camera_locked then
+				input = input:null_service()
+			elseif mod._mouse_smoothing then
+				input = _wrap_player_input(input, main_dt)
+			end
 		end
 
 		return func(self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
@@ -2185,8 +2614,14 @@ mod:hook_safe("CameraManager", "shading_callback",
 	end)
 
 mod:hook("FreeFlightManager", "_update_camera", function(func, self, input, dt, camera_data)
-	if input and mod:is_enabled() and mod._menu_open and mod._camera_locked then
-		input = input:null_service()
+	local is_rig_active = mod._tripod_active or mod._dolly_active or mod._orbit_active
+
+	if mod:is_enabled() and mod._menu_open and mod._camera_locked and not is_rig_active then
+		return
+	end
+
+	if input and mod:is_enabled() and mod._mouse_smoothing then
+		input = _wrap_freeflight_input(input, dt)
 	end
 
 	func(self, input, dt, camera_data)
@@ -2361,6 +2796,13 @@ mod.on_setting_changed = function(setting_id)
 		mod._camera_locked = mod:get("lock_camera_in_menu") ~= false
 	elseif setting_id == "allow_in_game_actions" then
 		mod._actions_allowed = mod:get("allow_in_game_actions") ~= false
+	elseif setting_id == "mouse_smoothing" then
+		local val = mod:get("mouse_smoothing")
+		if val ~= mod._mouse_smoothing then
+			mod.set_mouse_smoothing(val)
+		end
+	elseif setting_id == "mouse_smoothing_amount" then
+		mod._mouse_smoothing_amount = mod:get("mouse_smoothing_amount") or 0.65
 	end
 
 	if setting_id == "light_intensity" or setting_id == "light_radius"
@@ -2453,7 +2895,31 @@ local function _setup_replays_integration()
 			end
 		end
 
+		local orig_mouse_axis = Mouse.axis
+		if mod._mouse_smoothing and orig_mouse_axis then
+			Mouse.axis = function(axis_index)
+				if axis_index == 0 then
+					local raw_look = orig_mouse_axis(0)
+					local smoothed_look, new_x, new_y = _calculate_smoothed_look(
+						raw_look,
+						_ff_smooth_x,
+						_ff_smooth_y,
+						dt,
+						mod._mouse_smoothing_amount or 0.65
+					)
+					_ff_smooth_x = new_x
+					_ff_smooth_y = new_y
+					return smoothed_look
+				end
+				return orig_mouse_axis(axis_index)
+			end
+		end
+
 		func(dt)
+
+		if orig_mouse_axis then
+			Mouse.axis = orig_mouse_axis
+		end
 
 		if mod._tilt_angle and mod._tilt_angle ~= 0 then
 			local world = PLAY.viewport_world

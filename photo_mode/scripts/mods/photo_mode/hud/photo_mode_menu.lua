@@ -10,8 +10,8 @@ M.DEFAULT_HEIGHT = 540
 M.HEIGHT = 540
 M.TAB_HEIGHTS = {
 	time_hud = 380,
-	camera = 450,
-	rigs = 490,
+	camera = 530,
+	rigs = 560,
 	lighting = 580,
 }
 M.LAYER = 950
@@ -313,6 +313,24 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 		1.0, dof_blur, 0.1, 1, function(v)
 		mod:set("dof_blur_amount", v, true)
 	end)
+	y = y + 38
+
+	_section_header(ctx.items, "MOUSE LOOK SMOOTHING", cx_start, y, w)
+	y = y + 24
+
+	local half_w = math.floor((w - 10) / 2)
+	local mouse_smoothing = mod._mouse_smoothing
+	_button(ctx, "toggle_mouse_smoothing", mouse_smoothing and "SMOOTHING: ON" or "SMOOTHING: OFF", cx_start, y, half_w, 32,
+		mouse_smoothing, function()
+			mod.toggle_mouse_smoothing()
+		end)
+
+	local smoothing_amt = mod._mouse_smoothing_amount or mod:get("mouse_smoothing_amount") or 0.65
+	_slider(ctx, "mouse_smoothing_amount", "Smoothing Strength", string.format("%d%%", math.floor(smoothing_amt * 100 + 0.5)),
+		cx_start + half_w + 10, y, half_w, 32, 0.10, 0.95, smoothing_amt, 0.05, 2, function(v)
+			mod:set("mouse_smoothing_amount", v, true)
+			mod._mouse_smoothing_amount = v
+		end)
 end
 
 local function _build_time_hud_tab(ctx, cx_start, cy_start, w)
@@ -598,6 +616,58 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 	end)
 	_button(ctx, "dolly_clear", "Clear Dolly Points", cx_start + half_w + 10, y, half_w, 28, false, function()
 		mod.dolly_clear_points()
+	end)
+	y = y + 34
+
+	local arrow_w = 34
+	local del_btn_w = 64
+	local gap = 8
+	local selector_mid_w = w - (arrow_w * 2 + del_btn_w + gap * 3)
+
+	local sel_dolly_idx = mod._selected_dolly_index or num_dolly
+	if num_dolly > 0 and (sel_dolly_idx < 1 or sel_dolly_idx > num_dolly) then
+		sel_dolly_idx = num_dolly
+		mod._selected_dolly_index = sel_dolly_idx
+	end
+
+	_button(ctx, "prev_dolly_point", "<", cx_start, y, arrow_w, 28, false, function()
+		if mod.select_prev_dolly_point then
+			mod.select_prev_dolly_point()
+		end
+	end)
+
+	local cur_pt = (num_dolly > 0 and mod._dolly_points[sel_dolly_idx]) or nil
+	local pt_name = cur_pt and cur_pt.name or (sel_dolly_idx > 0 and tostring(sel_dolly_idx) or "-")
+	local sel_dolly_label = num_dolly > 0 and string.format("Point %s (%d of %d)", pt_name, sel_dolly_idx, num_dolly) or "No Waypoints Stored"
+	_button(ctx, "selected_dolly_display", sel_dolly_label, cx_start + arrow_w + gap, y, selector_mid_w, 28, num_dolly > 0, function()
+		if num_dolly > 0 and mod.select_next_dolly_point then
+			mod.select_next_dolly_point()
+		end
+	end)
+
+	_button(ctx, "next_dolly_point", ">", cx_start + arrow_w + gap + selector_mid_w + gap, y, arrow_w, 28, false, function()
+		if mod.select_next_dolly_point then
+			mod.select_next_dolly_point()
+		end
+	end)
+
+	_button(ctx, "delete_selected_dolly_point", "Delete", cx_start + arrow_w + gap + selector_mid_w + gap + arrow_w + gap, y, del_btn_w, 28, false, function()
+		if mod.delete_selected_dolly_point then
+			mod.delete_selected_dolly_point()
+		end
+	end)
+	y = y + 34
+
+	_button(ctx, "dolly_goto_point", "Go to Point", cx_start, y, half_w, 28, false, function()
+		if mod.dolly_goto_point then
+			mod.dolly_goto_point()
+		end
+	end)
+
+	_button(ctx, "dolly_update_point", "Update Point", cx_start + half_w + 10, y, half_w, 28, false, function()
+		if mod.dolly_update_point then
+			mod.dolly_update_point()
+		end
 	end)
 	y = y + 34
 
