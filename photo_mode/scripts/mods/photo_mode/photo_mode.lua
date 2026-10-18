@@ -68,6 +68,7 @@ mod._orbit_rot = nil
 mod._orbit_center = nil
 mod._orbit_angle = 0
 mod._orbit_height = 0
+mod._orbit_paused = false
 
 local HUD_VISIBILITY_GROUP = "photo_mode_hide_hud"
 
@@ -844,10 +845,13 @@ mod.reset_tab_rigs = function(silent)
 	mod._selected_dolly_index = nil
 	mod:set("dolly_duration", 8.0, true)
 	mod:set("dolly_motion", "smooth", true)
+	mod:set("dolly_time_inbetween", 2.0, true)
 
 	if mod._orbit_active then
 		mod.set_orbit_active(false)
 	end
+	mod._orbit_paused = false
+	mod:set("orbit_paused", false, true)
 	mod._silent_reset = nil
 
 	mod:set("orbit_target_mode", "character", true)
@@ -1606,6 +1610,8 @@ mod.set_dolly_active = function(enabled)
 		mod._dolly_dists, mod._dolly_total_dist = _calculate_dolly_distances()
 		mod._dolly_progress = 0
 		mod._dolly_direction = 1
+		mod._dolly_timer = 0
+		mod._dolly_last_step = nil
 
 		local start_pt = mod._dolly_points[1]
 		mod._dolly_pos = Vector3Box(start_pt.pos:unbox())
@@ -1770,17 +1776,47 @@ mod.set_orbit_active = function(enabled)
 		end
 
 		mod._orbit_active = true
+		mod._orbit_paused = false
 		mod:set("orbit_active", true)
+		mod:set("orbit_paused", false)
 		_update_rig_perspective()
 		mod:echo(mod:localize("msg_orbit_started"))
 	else
 		mod._orbit_active = false
+		mod._orbit_paused = false
 		mod._orbit_pos = nil
 		mod._orbit_rot = nil
 		mod:set("orbit_active", false)
+		mod:set("orbit_paused", false)
 		_update_rig_perspective()
 		mod:echo(mod:localize("msg_orbit_stopped"))
 	end
+end
+
+mod.set_orbit_paused = function(paused)
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._orbit_paused = (paused == true)
+	mod:set("orbit_paused", mod._orbit_paused)
+
+	if not mod._silent_reset then
+		mod:echo(mod:localize(mod._orbit_paused and "msg_orbit_paused" or "msg_orbit_resumed"))
+	end
+end
+
+mod.toggle_orbit_pause = function()
+	if not mod:is_enabled() then
+		return
+	end
+
+	if not mod._orbit_active then
+		mod.set_orbit_active(true)
+		return
+	end
+
+	mod.set_orbit_paused(not mod._orbit_paused)
 end
 
 mod.toggle_orbit = function()
@@ -2070,73 +2106,105 @@ mod.update = function(dt)
 	end
 
 	if mod._dolly_active and mod._dolly_points and #mod._dolly_points >= 2 and mod._dolly_pos and mod._dolly_rot then
-		local duration = mod:get("dolly_duration") or 8.0
 		local motion = mod:get("dolly_motion") or "smooth"
 
-		mod._dolly_progress = mod._dolly_progress + (dt / math.max(0.1, duration)) * mod._dolly_direction
+		if motion == "instant" or motion == "instant_loop" then
+			local count = #mod._dolly_points
+			local step_time = math.max(0.1, mod:get("dolly_time_inbetween") or 2.0)
+			mod._dolly_timer = (mod._dolly_timer or 0) + dt
 
-		if motion == "loop" then
-			if mod._dolly_progress >= 1.0 then
-				mod._dolly_progress = 1.0
-				mod._dolly_direction = -1
-			elseif mod._dolly_progress <= 0.0 then
-				mod._dolly_progress = 0.0
-				mod._dolly_direction = 1
+			local total_time = count * step_time
+
+			if motion == "instant_loop" then
+				if mod._dolly_timer >= total_time then
+					mod._dolly_timer = mod._dolly_timer % total_time
+				end
+			elseif mod._dolly_timer >= total_time then
+				mod.set_dolly_active(false)
+				return
+			end
+
+			local step_idx = math.clamp(math.floor(mod._dolly_timer / step_time) + 1, 1, count)
+			if step_idx ~= mod._dolly_last_step then
+				mod._dolly_last_step = step_idx
+				local pt = mod._dolly_points[step_idx]
+				if pt then
+					mod._dolly_pos:store(pt.pos:unbox())
+					mod._dolly_rot:store(pt.rot:unbox())
+					if pt.fov_offset then
+						mod._fov_offset = pt.fov_offset
+					end
+					mod._selected_dolly_index = step_idx
+				end
 			end
 		else
-			if mod._dolly_progress >= 1.0 then
-				mod._dolly_progress = 1.0
+			local duration = mod:get("dolly_duration") or 8.0
+
+			mod._dolly_progress = mod._dolly_progress + (dt / math.max(0.1, duration)) * mod._dolly_direction
+
+			if motion == "loop" then
+				if mod._dolly_progress >= 1.0 then
+					mod._dolly_progress = 1.0
+					mod._dolly_direction = -1
+				elseif mod._dolly_progress <= 0.0 then
+					mod._dolly_progress = 0.0
+					mod._dolly_direction = 1
+				end
+			else
+				if mod._dolly_progress >= 1.0 then
+					mod._dolly_progress = 1.0
+				end
 			end
-		end
 
-		local raw_t = math.clamp(mod._dolly_progress, 0, 1)
-		local t = raw_t
+			local raw_t = math.clamp(mod._dolly_progress, 0, 1)
+			local t = raw_t
 
-		if motion == "smooth" or motion == "loop" then
-			t = raw_t * raw_t * (3 - 2 * raw_t)
-		end
+			if motion == "smooth" or motion == "loop" then
+				t = raw_t * raw_t * (3 - 2 * raw_t)
+			end
 
-		if mod._dolly_total_dist and mod._dolly_total_dist > 0.001 and mod._dolly_dists then
-			local target_dist = t * mod._dolly_total_dist
-			local accumulated = 0
-			local seg_index = 1
-			local seg_t = 0
+			if mod._dolly_total_dist and mod._dolly_total_dist > 0.001 and mod._dolly_dists then
+				local target_dist = t * mod._dolly_total_dist
+				local accumulated = 0
+				local seg_index = 1
+				local seg_t = 0
 
-			for i = 1, #mod._dolly_dists do
-				local seg_len = mod._dolly_dists[i]
+				for i = 1, #mod._dolly_dists do
+					local seg_len = mod._dolly_dists[i]
 
-				if target_dist <= accumulated + seg_len or i == #mod._dolly_dists then
-					seg_index = i
-					if seg_len > 0.0001 then
-						seg_t = math.clamp((target_dist - accumulated) / seg_len, 0, 1)
-					else
-						seg_t = 0
+					if target_dist <= accumulated + seg_len or i == #mod._dolly_dists then
+						seg_index = i
+						if seg_len > 0.0001 then
+							seg_t = math.clamp((target_dist - accumulated) / seg_len, 0, 1)
+						else
+							seg_t = 0
+						end
+						break
 					end
-					break
+
+					accumulated = accumulated + seg_len
 				end
 
-				accumulated = accumulated + seg_len
-			end
+				local pt1 = mod._dolly_points[seg_index]
+				local pt2 = mod._dolly_points[seg_index + 1]
 
-			local pt1 = mod._dolly_points[seg_index]
-			local pt2 = mod._dolly_points[seg_index + 1]
+				if pt1 and pt2 and mod._dolly_pos and mod._dolly_rot then
+					local cur_pos = Vector3.lerp(pt1.pos:unbox(), pt2.pos:unbox(), seg_t)
+					local cur_rot = Quaternion.lerp(pt1.rot:unbox(), pt2.rot:unbox(), seg_t)
 
-			if pt1 and pt2 and mod._dolly_pos and mod._dolly_rot then
-				local cur_pos = Vector3.lerp(pt1.pos:unbox(), pt2.pos:unbox(), seg_t)
-				local cur_rot = Quaternion.lerp(pt1.rot:unbox(), pt2.rot:unbox(), seg_t)
+					mod._dolly_pos:store(cur_pos)
+					mod._dolly_rot:store(cur_rot)
 
-				mod._dolly_pos:store(cur_pos)
-				mod._dolly_rot:store(cur_rot)
-
-				if pt1.fov_offset and pt2.fov_offset then
-					local cur_offset = math.floor(pt1.fov_offset + (pt2.fov_offset - pt1.fov_offset) * seg_t + 0.5)
-					mod._fov_offset = cur_offset
+					if pt1.fov_offset and pt2.fov_offset then
+						local cur_offset = math.floor(pt1.fov_offset + (pt2.fov_offset - pt1.fov_offset) * seg_t + 0.5)
+						mod._fov_offset = cur_offset
+					end
 				end
 			end
-		end
 
-		if motion ~= "loop" and mod._dolly_progress >= 1.0 then
-			mod.set_dolly_active(false)
+			if motion ~= "loop" and mod._dolly_progress >= 1.0 then
+				mod.set_dolly_active(false)
+			end
 		end
 	end
 
@@ -2144,10 +2212,12 @@ mod.update = function(dt)
 		local center = _get_orbit_center()
 
 		if center then
-			local speed = mod:get("orbit_speed") or 15.0
-			local dir = (mod:get("orbit_direction") == "ccw") and 1 or -1
-			local d_angle = math.rad(speed) * dir * dt
-			mod._orbit_angle = ((mod._orbit_angle or 0) + d_angle) % (2 * math.pi)
+			if not mod._orbit_paused then
+				local speed = mod:get("orbit_speed") or 15.0
+				local dir = (mod:get("orbit_direction") == "ccw") and 1 or -1
+				local d_angle = math.rad(speed) * dir * dt
+				mod._orbit_angle = ((mod._orbit_angle or 0) + d_angle) % (2 * math.pi)
+			end
 
 			local radius = mod:get("orbit_radius") or 4.0
 			local height = mod:get("orbit_height") or 0.3
@@ -2781,6 +2851,11 @@ mod.on_setting_changed = function(setting_id)
 		local val = mod:get("orbit_active")
 		if val ~= mod._orbit_active then
 			mod.set_orbit_active(val)
+		end
+	elseif setting_id == "orbit_paused" then
+		local val = mod:get("orbit_paused") == true
+		if val ~= mod._orbit_paused then
+			mod.set_orbit_paused(val)
 		end
 	elseif setting_id == "slomo_scale" and mod._slomo_active and not mod._time_frozen then
 		local slomo_scale = mod:get("slomo_scale") or 0.10

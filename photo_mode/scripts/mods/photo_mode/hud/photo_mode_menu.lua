@@ -672,28 +672,52 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 	y = y + 34
 
 	local motion = mod:get("dolly_motion") or "smooth"
-	local motion_label = "Motion: " .. string.upper(motion)
+	local motion_labels = {
+		smooth = "Motion: SMOOTH",
+		linear = "Motion: LINEAR",
+		loop = "Motion: LOOP",
+		instant = "Motion: INSTANT",
+		instant_loop = "Motion: INST-LOOP",
+	}
+	local motion_label = motion_labels[motion] or ("Motion: " .. string.upper(motion))
 	_button(ctx, "dolly_motion", motion_label, cx_start, y, half_w, 28, false, function()
-		local next_m = motion == "smooth" and "linear" or (motion == "linear" and "loop" or "smooth")
+		local next_m = (motion == "smooth" and "linear")
+			or (motion == "linear" and "loop")
+			or (motion == "loop" and "instant")
+			or (motion == "instant" and "instant_loop")
+			or "smooth"
 		mod:set("dolly_motion", next_m, true)
 	end)
 
-	local duration = mod:get("dolly_duration") or 8.0
-	_slider(ctx, "dolly_duration", "Duration", string.format("%.1f s", duration), cx_start + half_w + 10, y, half_w, 28,
-		2.0, 60.0, duration, 0.5, 1, function(v)
-		mod:set("dolly_duration", v, true)
-	end)
+	if motion == "instant" or motion == "instant_loop" then
+		local time_inbetween = mod:get("dolly_time_inbetween") or 2.0
+		_slider(ctx, "dolly_time_inbetween", "Time Between", string.format("%.1f s", time_inbetween),
+			cx_start + half_w + 10, y, half_w, 28, 0.1, 10.0, time_inbetween, 0.1, 1, function(v)
+			mod:set("dolly_time_inbetween", v, true)
+		end)
+	else
+		local duration = mod:get("dolly_duration") or 8.0
+		_slider(ctx, "dolly_duration", "Duration", string.format("%.1f s", duration), cx_start + half_w + 10, y, half_w, 28,
+			2.0, 60.0, duration, 0.5, 1, function(v)
+			mod:set("dolly_duration", v, true)
+		end)
+	end
 	y = y + 38
 
 	_section_header(ctx.items, "ORBIT CAMERA RIG", cx_start, y, w)
 	y = y + 24
 
 	local orbit_active = mod._orbit_active
-	_button(ctx, "toggle_orbit", orbit_active and "ORBIT: ACTIVE" or "ORBIT: OFF", cx_start, y, half_w, 30, orbit_active,
+	local orbit_paused = mod._orbit_paused
+	_button(ctx, "toggle_orbit", orbit_active and "ORBIT: ACTIVE" or "ORBIT: OFF", cx_start, y, third_w, 30, orbit_active,
 		function()
 			mod.toggle_orbit()
 		end)
-	_button(ctx, "orbit_center", "Set Center (At Cam)", cx_start + half_w + 10, y, half_w, 30, false, function()
+	_button(ctx, "orbit_pause", orbit_paused and "PAUSED" or "PAUSE", cx_start + third_w + 10, y, third_w, 30, orbit_paused,
+		function()
+			mod.toggle_orbit_pause()
+		end)
+	_button(ctx, "orbit_center", "Set Center (Cam)", cx_start + (third_w + 10) * 2, y, third_w, 30, false, function()
 		mod.orbit_set_center()
 	end)
 	y = y + 36

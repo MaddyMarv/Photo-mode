@@ -560,6 +560,18 @@ return {
 	dolly_motion_loop = {
 		en = "Ping-Pong Loop",
 	},
+	dolly_motion_instant = {
+		en = "Instant Cut",
+	},
+	dolly_motion_instant_loop = {
+		en = "Instant Loop",
+	},
+	dolly_time_inbetween = {
+		en = "Time Between Points",
+	},
+	dolly_time_inbetween_description = {
+		en = "Time in seconds spent at each waypoint before snapping to the next in instant mode.",
+	},
 	orbit_group = {
 		en = "Orbit Rig (Circular)",
 	},
@@ -574,6 +586,12 @@ return {
 	},
 	toggle_orbit_description = {
 		en = "Hotkey to start or stop orbit circling.",
+	},
+	toggle_orbit_pause = {
+		en = "Pause / Resume Orbit",
+	},
+	toggle_orbit_pause_description = {
+		en = "Hotkey to pause or resume camera rotation along the orbit circle.",
 	},
 	orbit_set_center = {
 		en = "Set Orbit Center Keybind",
@@ -646,6 +664,12 @@ return {
 	},
 	msg_orbit_stopped = {
 		en = "Orbit: Stopped",
+	},
+	msg_orbit_paused = {
+		en = "Orbit: Paused",
+	},
+	msg_orbit_resumed = {
+		en = "Orbit: Resumed",
 	},
 	msg_dolly_point_added = {
 		en = "Dolly: Waypoint Saved",
