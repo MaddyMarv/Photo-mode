@@ -65,9 +65,17 @@ To do:
 - Focus Region
 - Blur Amount
 
+**Mouse Look Smoothing**
+- Mouse Smoothing
+- Mouse Smoothing (Hotkey)
+- Smoothing Strength
+
 **Lighting Controls**
 - Place Light (Hotkey)
 - Undo Light (Hotkey)
+- Delete Selected Light (Hotkey)
+- Select Previous Light (Hotkey)
+- Select Next Light (Hotkey)
 - Clear All Lights (Hotkey)
 - Lantern Light
 - Lantern (Hotkey)
@@ -86,11 +94,19 @@ To do:
 - Dolly Track Toggle
 - Play/Stop Dolly (Hotkey)
 - Add Waypoint (Hotkey)
+- Undo Waypoint (Hotkey)
 - Clear Waypoints (Hotkey)
+- Delete Waypoint (Hotkey)
+- Previous Waypoint (Hotkey)
+- Next Waypoint (Hotkey)
+- Go to Waypoint (Hotkey)
+- Update Waypoint (Hotkey)
 - Dolly Duration (Seconds)
-- Dolly Motion [Smooth Ease, Linear, Ping-Pong Loop]
+- Time Between Points (Seconds)
+- Dolly Motion [Smooth Ease, Linear, Ping-Pong Loop, Instant Cut, Instant Loop]
 - Orbit Rig Toggle
 - Play/Stop Orbit (Hotkey)
+- Pause Orbit (Hotkey)
 - Set Orbit Center (Hotkey)
 - Orbit Target [Your Character, Recorded Point]
 - Camera Facing [Inward, Outward]
