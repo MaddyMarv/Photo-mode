@@ -1961,6 +1961,7 @@ mod.place_light = function()
 	local unit = World.spawn_unit_ex(world, "core/units/light", nil, pos, rot)
 
 	if unit and Unit.alive(unit) then
+		Unit.set_data(unit, "photo_mode_light", true)
 		local light_obj = Unit.light(unit, 1)
 
 		if light_obj then
@@ -2052,7 +2053,7 @@ mod.clear_lights = function()
 		local units = World.units(world)
 		for i = 1, #units do
 			local u = units[i]
-			if Unit.alive(u) and Unit.is_a(u, "core/units/light") then
+			if Unit.alive(u) and Unit.get_data(u, "photo_mode_light") == true then
 				World.destroy_unit(world, u)
 			end
 		end
@@ -2110,6 +2111,7 @@ mod.update = function(dt)
 				mod._lantern_unit = World.spawn_unit_ex(world, "core/units/light", nil, pos, rot)
 
 				if mod._lantern_unit and Unit.alive(mod._lantern_unit) then
+					Unit.set_data(mod._lantern_unit, "photo_mode_light", true)
 					local light_obj = Unit.light(mod._lantern_unit, 1)
 
 					if light_obj then
