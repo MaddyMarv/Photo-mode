@@ -611,10 +611,15 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 	y = y + 36
 
 	local num_dolly = #mod._dolly_points
-	_button(ctx, "dolly_add", string.format("+ Dolly Point (%d)", num_dolly), cx_start, y, half_w, 28, false, function()
+	_button(ctx, "dolly_add", string.format("+ Point (%d)", num_dolly), cx_start, y, third_w, 28, false, function()
 		mod.dolly_add_point()
 	end)
-	_button(ctx, "dolly_clear", "Clear Dolly Points", cx_start + half_w + 10, y, half_w, 28, false, function()
+	_button(ctx, "dolly_undo", "Undo Point", cx_start + third_w + 10, y, third_w, 28, false, function()
+		if mod.dolly_undo_point then
+			mod.dolly_undo_point()
+		end
+	end)
+	_button(ctx, "dolly_clear", "Clear All", cx_start + (third_w + 10) * 2, y, third_w, 28, false, function()
 		mod.dolly_clear_points()
 	end)
 	y = y + 34

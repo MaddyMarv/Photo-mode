@@ -503,6 +503,12 @@ return {
 	dolly_add_point_description = {
 		en = "Adds camera as a waypoint.",
 	},
+	dolly_undo_point = {
+		en = "Undo Waypoint Keybind",
+	},
+	dolly_undo_point_description = {
+		en = "Deletes the last saved waypoint.",
+	},
 	dolly_clear_points = {
 		en = "Clear Waypoints Keybind",
 	},
@@ -673,6 +679,9 @@ return {
 	},
 	msg_dolly_point_added = {
 		en = "Dolly: Waypoint Saved",
+	},
+	msg_dolly_point_undone = {
+		en = "Dolly: Last Waypoint Removed",
 	},
 	msg_dolly_point_deleted = {
 		en = "Dolly: Waypoint Deleted",

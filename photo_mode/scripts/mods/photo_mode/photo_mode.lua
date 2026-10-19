@@ -1382,6 +1382,40 @@ mod.dolly_clear_points = function()
 	mod:echo(mod:localize("msg_dolly_points_cleared"))
 end
 
+mod.dolly_undo_point = function()
+	if not mod:is_enabled() then
+		return
+	end
+
+	local count = #mod._dolly_points
+	if count == 0 then
+		mod:echo(mod:localize("msg_dolly_no_points"))
+		return
+	end
+
+	local removed_pt = table.remove(mod._dolly_points, count)
+
+	local remaining = #mod._dolly_points
+	if remaining == 0 then
+		mod._selected_dolly_index = nil
+		mod.set_dolly_active(false)
+	else
+		mod._selected_dolly_index = math.clamp(mod._selected_dolly_index or remaining, 1, remaining)
+		if mod._dolly_active then
+			if remaining < 2 then
+				mod.set_dolly_active(false)
+			else
+				mod._dolly_dists, mod._dolly_total_dist = _calculate_dolly_distances()
+			end
+		end
+	end
+
+	local pt_name = removed_pt and removed_pt.name or tostring(count)
+	mod:echo(mod:localize("msg_dolly_point_undone") .. ": Point " .. tostring(pt_name) .. " (" .. tostring(remaining) .. " left)")
+end
+
+mod.undo_dolly_point = mod.dolly_undo_point
+
 mod.dolly_list_points = function()
 	if not mod:is_enabled() then
 		return
@@ -2688,7 +2722,51 @@ mod:hook_safe("CameraManager", "shading_callback",
 		end
 	end)
 
+mod:hook("FreeFlightManager", "camera", function(func, self, camera_id)
+	local data = self._free_flight_cameras and self._free_flight_cameras[camera_id]
+	if not data or not data.viewport_world_name then
+		return false
+	end
+
+	local world = Managers.world and Managers.world:has_world(data.viewport_world_name) and Managers.world:world(data.viewport_world_name)
+	if not world then
+		data.active = false
+		data.viewport_world_name = nil
+		return false
+	end
+
+	local viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+	if not viewport then
+		data.active = false
+		data.viewport_world_name = nil
+		return false
+	end
+
+	return func(self, camera_id)
+end)
+
 mod:hook("FreeFlightManager", "_update_camera", function(func, self, input, dt, camera_data)
+	if not camera_data or not camera_data.viewport_world_name then
+		if camera_data then
+			camera_data.active = false
+		end
+		return
+	end
+
+	local world = Managers.world and Managers.world:has_world(camera_data.viewport_world_name) and Managers.world:world(camera_data.viewport_world_name)
+	if not world then
+		camera_data.active = false
+		camera_data.viewport_world_name = nil
+		return
+	end
+
+	local viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+	if not viewport and not camera_data.frustum_freeze_camera then
+		camera_data.active = false
+		camera_data.viewport_world_name = nil
+		return
+	end
+
 	local is_rig_active = mod._tripod_active or mod._dolly_active or mod._orbit_active
 
 	if mod:is_enabled() and mod._menu_open and mod._camera_locked and not is_rig_active then
@@ -2717,8 +2795,6 @@ mod:hook("FreeFlightManager", "_update_camera", function(func, self, input, dt, 
 		end
 
 		if pos and rot then
-			local world = Managers.world:world(camera_data.viewport_world_name)
-			local viewport = world and ScriptWorld.global_free_flight_viewport(world)
 			local cam = camera_data.frustum_freeze_camera or (viewport and ScriptViewport.camera(viewport))
 
 			if cam then

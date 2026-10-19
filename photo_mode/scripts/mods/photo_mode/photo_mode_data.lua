@@ -525,6 +525,15 @@ return {
 						function_name = "dolly_add_point",
 					},
 					{
+						setting_id = "dolly_undo_point",
+						type = "keybind",
+						default_value = {},
+						keybind_global = true,
+						keybind_trigger = "pressed",
+						keybind_type = "function_call",
+						function_name = "dolly_undo_point",
+					},
+					{
 						setting_id = "dolly_clear_points",
 						type = "keybind",
 						default_value = {},
