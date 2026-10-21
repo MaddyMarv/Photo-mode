@@ -335,6 +335,12 @@ return {
 	mouse_smoothing_amount_description = {
 		en = "How smooth camera movement is.",
 	},
+	mouse_smoothing_speed = {
+		en = "Smoothing Look Speed",
+	},
+	mouse_smoothing_speed_description = {
+		en = "Camera look speed multiplier while mouse smoothing is active.",
+	},
 	msg_mouse_smoothing_on = {
 		en = "Mouse Smoothing: Active",
 	},
@@ -343,6 +349,9 @@ return {
 	},
 	msg_mouse_smoothing_amount = {
 		en = "Smoothing Strength",
+	},
+	msg_mouse_smoothing_speed = {
+		en = "Smoothing Look Speed",
 	},
 	lighting_actions = {
 		en = "Lighting Controls",

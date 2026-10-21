@@ -10,7 +10,7 @@ M.DEFAULT_HEIGHT = 540
 M.HEIGHT = 540
 M.TAB_HEIGHTS = {
 	time_hud = 380,
-	camera = 530,
+	camera = 550,
 	rigs = 560,
 	lighting = 580,
 }
@@ -318,18 +318,26 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 	_section_header(ctx.items, "MOUSE LOOK SMOOTHING", cx_start, y, w)
 	y = y + 24
 
-	local half_w = math.floor((w - 10) / 2)
 	local mouse_smoothing = mod._mouse_smoothing
-	_button(ctx, "toggle_mouse_smoothing", mouse_smoothing and "SMOOTHING: ON" or "SMOOTHING: OFF", cx_start, y, half_w, 32,
+	_button(ctx, "toggle_mouse_smoothing", mouse_smoothing and "SMOOTHING: ON" or "SMOOTHING: OFF", cx_start, y, w, 28,
 		mouse_smoothing, function()
 			mod.toggle_mouse_smoothing()
 		end)
+	y = y + 36
 
+	local half_w = math.floor((w - 10) / 2)
 	local smoothing_amt = mod._mouse_smoothing_amount or mod:get("mouse_smoothing_amount") or 0.65
 	_slider(ctx, "mouse_smoothing_amount", "Smoothing Strength", string.format("%d%%", math.floor(smoothing_amt * 100 + 0.5)),
-		cx_start + half_w + 10, y, half_w, 32, 0.10, 0.95, smoothing_amt, 0.05, 2, function(v)
+		cx_start, y, half_w, 32, 0.10, 0.95, smoothing_amt, 0.05, 2, function(v)
 			mod:set("mouse_smoothing_amount", v, true)
 			mod._mouse_smoothing_amount = v
+		end)
+
+	local smoothing_spd = mod._mouse_smoothing_speed or mod:get("mouse_smoothing_speed") or 1.0
+	_slider(ctx, "mouse_smoothing_speed", "Look Speed", string.format("%d%%", math.floor(smoothing_spd * 100 + 0.5)),
+		cx_start + half_w + 10, y, half_w, 32, 0.10, 3.00, smoothing_spd, 0.05, 2, function(v)
+			mod:set("mouse_smoothing_speed", v, true)
+			mod._mouse_smoothing_speed = v
 		end)
 end
 

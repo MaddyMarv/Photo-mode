@@ -348,6 +348,14 @@ return {
 						decimals_number = 2,
 						step_size_value = 0.05,
 					},
+					{
+						setting_id = "mouse_smoothing_speed",
+						type = "numeric",
+						default_value = 1.0,
+						range = { 0.10, 3.00 },
+						decimals_number = 2,
+						step_size_value = 0.05,
+					},
 				},
 			},
 			{

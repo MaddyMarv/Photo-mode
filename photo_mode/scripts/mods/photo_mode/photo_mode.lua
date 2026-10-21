@@ -47,6 +47,7 @@ mod._dof_was_applied = false
 mod._original_render_dof = nil
 mod._mouse_smoothing = mod:get("mouse_smoothing") or false
 mod._mouse_smoothing_amount = mod:get("mouse_smoothing_amount") or 0.65
+mod._mouse_smoothing_speed = mod:get("mouse_smoothing_speed") or 1.0
 
 mod._tripod_active = false
 mod._tripod_pos = nil
@@ -757,6 +758,8 @@ mod.reset_tab_camera = function(silent)
 	end
 	mod._mouse_smoothing_amount = 0.65
 	mod:set("mouse_smoothing_amount", 0.65, true)
+	mod._mouse_smoothing_speed = 1.0
+	mod:set("mouse_smoothing_speed", 1.0, true)
 	mod._reset_mouse_smoothing()
 	mod._silent_reset = nil
 
@@ -2457,9 +2460,10 @@ mod._reset_mouse_smoothing = function()
 	_player_smooth_y = 0
 end
 
-local function _calculate_smoothed_look(raw_look, prev_x, prev_y, dt, strength)
-	local raw_x = Vector3.x(raw_look)
-	local raw_y = Vector3.y(raw_look)
+local function _calculate_smoothed_look(raw_look, prev_x, prev_y, dt, strength, speed)
+	local spd = speed or 1.0
+	local raw_x = Vector3.x(raw_look) * spd
+	local raw_y = Vector3.y(raw_look) * spd
 
 	if raw_x == 0 and raw_y == 0 and math.abs(prev_x) < 0.0001 and math.abs(prev_y) < 0.0001 then
 		return Vector3(0, 0, 0), 0, 0
@@ -2550,7 +2554,8 @@ function _ff_input_proxy:get(action_name, ...)
 			_ff_smooth_x,
 			_ff_smooth_y,
 			_ff_current_dt,
-			mod._mouse_smoothing_amount or 0.65
+			mod._mouse_smoothing_amount or 0.65,
+			mod._mouse_smoothing_speed or 1.0
 		)
 		_ff_smooth_x = new_x
 		_ff_smooth_y = new_y
@@ -2604,7 +2609,8 @@ function _player_input_proxy:get(action_name, ...)
 			_player_smooth_x,
 			_player_smooth_y,
 			_player_current_dt,
-			mod._mouse_smoothing_amount or 0.65
+			mod._mouse_smoothing_amount or 0.65,
+			mod._mouse_smoothing_speed or 1.0
 		)
 		_player_smooth_x = new_x
 		_player_smooth_y = new_y
@@ -2961,6 +2967,8 @@ mod.on_setting_changed = function(setting_id)
 		end
 	elseif setting_id == "mouse_smoothing_amount" then
 		mod._mouse_smoothing_amount = mod:get("mouse_smoothing_amount") or 0.65
+	elseif setting_id == "mouse_smoothing_speed" then
+		mod._mouse_smoothing_speed = mod:get("mouse_smoothing_speed") or 1.0
 	end
 
 	if setting_id == "light_intensity" or setting_id == "light_radius"
@@ -3063,7 +3071,8 @@ local function _setup_replays_integration()
 						_ff_smooth_x,
 						_ff_smooth_y,
 						dt,
-						mod._mouse_smoothing_amount or 0.65
+						mod._mouse_smoothing_amount or 0.65,
+						mod._mouse_smoothing_speed or 1.0
 					)
 					_ff_smooth_x = new_x
 					_ff_smooth_y = new_y

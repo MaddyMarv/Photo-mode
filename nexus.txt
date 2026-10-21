@@ -66,6 +66,7 @@ To do:
 - Mouse Smoothing
 - Mouse Smoothing (Hotkey)
 - Smoothing Strength
+- Smoothing Look Speed
 
 [b]Lighting Controls[/b]
 - Place Light (Hotkey)
