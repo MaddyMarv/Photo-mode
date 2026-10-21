@@ -12,7 +12,7 @@ To do:
 - Add character posing with emotes/end of screen with the ability to clone a posed character.
 - Add integration with [url=https://www.nexusmods.com/warhammer40kdarktide/mods/1365]Replays[/url]
 
-[b]Options:[/b]
+[b]Mod Settings / Commands:[/b]
 [spoiler]
 [b]Photo Mode In-Game Menu[/b]
 - Photo Mode Menu (Hotkey)

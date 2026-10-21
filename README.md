@@ -15,7 +15,8 @@ To do:
 - Add character posing with emotes/end of screen with the ability to clone a posed character
 - Add integration with [Replays](https://www.nexusmods.com/warhammer40kdarktide/mods/1365)
 
-**Options:**
+<details>
+<summary><b>Mod Settings / Commands</b></summary>
 
 **Photo Mode In-Game Menu**
 - Photo Mode Menu (Hotkey)
@@ -114,5 +115,6 @@ To do:
 - Orbit Distance
 - Orbit Height Offset
 - Orbit Direction [Clockwise, Counter-Clockwise]
+</details>
 
 🔗 **Links:** [Source Code](https://github.com/MaddyMarv/Photo-mode) | [Nexus Mods Profile](https://www.nexusmods.com/profile/indicabunny) | [Support Me on Ko-fi](https://ko-fi.com/indicabunny)
