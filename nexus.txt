@@ -13,7 +13,7 @@ To do:
 - Add integration with [url=https://www.nexusmods.com/warhammer40kdarktide/mods/1365]Replays[/url]
 
 [b]Options:[/b]
-
+[spoiler]
 [b]Photo Mode In-Game Menu[/b]
 - Photo Mode Menu (Hotkey)
 - Lock Camera in Menu
@@ -111,6 +111,7 @@ To do:
 - Orbit Distance
 - Orbit Height Offset
 - Orbit Direction [Clockwise, Counter-Clockwise]
+[/spoiler]
 
 [b]Links:[/b]
 [url=https://github.com/MaddyMarv/Photo-mode]Source Code[/url] | [url=https://www.nexusmods.com/profile/indicabunny]Nexus Mods Profile[/url] | [url=https://ko-fi.com/indicabunny]Support Me on Ko-fi[/url]
