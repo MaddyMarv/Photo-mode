@@ -128,7 +128,7 @@ To do:
 - Follow Character Heading
 - Camera Facing [Inward, Outward]
 - Orbit Speed
-- Track Position (0° - 360°)
+- Track Position
 - Orbit Distance
 - Orbit Height Offset
 - Orbit Pitch Angle
