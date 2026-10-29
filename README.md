@@ -43,6 +43,8 @@ To do:
 - Hide Arms (Hotkey)
 - Hide All Screen Effects
 - Hide Screen Effects (Hotkey)
+- Hide All Outlines
+- Toggle Outlines (Hotkey)
 
 **Lens Zoom / FOV**
 - Enable Lens Zoom / FOV Override
@@ -50,6 +52,8 @@ To do:
 - Zoom Out (Hotkey)
 - Reset FOV (Hotkey)
 - Camera FOV
+- Lock FOV
+- Toggle Lock FOV (Hotkey)
 
 **Dutch Angle / Tilt**
 - Tilt Left (Hotkey)
@@ -96,8 +100,11 @@ To do:
 - Cast Shadows
 
 **Camera Rigs**
+**Tripod Rig**
 - Tripod Lock
 - Tripod (Hotkey)
+
+**Dolly Track Rig**
 - Dolly Track Toggle
 - Play/Stop Dolly (Hotkey)
 - Add Waypoint (Hotkey)
@@ -111,15 +118,21 @@ To do:
 - Dolly Duration (Seconds)
 - Time Between Points (Seconds)
 - Dolly Motion [Smooth Ease, Linear, Ping-Pong Loop, Instant Cut, Instant Loop]
+
+**Orbit Camera Rig**
 - Orbit Rig Toggle
 - Play/Stop Orbit (Hotkey)
 - Pause Orbit (Hotkey)
 - Set Orbit Center (Hotkey)
 - Orbit Target [Your Character, Recorded Point]
+- Follow Character Heading
 - Camera Facing [Inward, Outward]
 - Orbit Speed
+- Track Position (0° - 360°)
 - Orbit Distance
 - Orbit Height Offset
+- Orbit Pitch Angle
+- Orbit Shoulder Offset
 - Orbit Direction [Clockwise, Counter-Clockwise]
 </details>
 

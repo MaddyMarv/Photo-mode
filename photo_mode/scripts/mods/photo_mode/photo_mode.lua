@@ -44,6 +44,7 @@ mod._extinguished_units = {}
 mod._exposure_was_applied = false
 
 mod._fov_offset = mod:get("camera_fov_offset") or 0
+mod._lock_fov = mod:get("lock_fov") or false
 mod._tilt_angle = mod:get("camera_tilt") or 0
 mod._dof_active = false
 mod._dof_distance = mod:get("dof_focal_distance") or 3.0
@@ -71,9 +72,14 @@ mod._orbit_active = false
 mod._orbit_pos = nil
 mod._orbit_rot = nil
 mod._orbit_center = nil
+mod._orbit_smooth_center = nil
+mod._orbit_smooth_fwd = nil
 mod._orbit_angle = 0
 mod._orbit_height = 0
+mod._orbit_pitch = 0
+mod._orbit_side_offset = 0
 mod._orbit_paused = false
+mod._hide_outlines = mod:get("hide_outlines") or false
 
 local HUD_VISIBILITY_GROUP = "photo_mode_hide_hud"
 
@@ -731,8 +737,12 @@ local function _cleanup_all()
 	mod._orbit_pos = nil
 	mod._orbit_rot = nil
 	mod._orbit_center = nil
+	mod._orbit_smooth_center = nil
+	mod._orbit_smooth_fwd = nil
 	mod._orbit_angle = 0
 	mod._orbit_height = 0
+	mod._orbit_pitch = 0
+	mod._orbit_side_offset = 0
 
 	_update_rig_perspective(false)
 	mod._reset_mouse_smoothing()
@@ -746,6 +756,8 @@ mod.reset_tab_camera = function(silent)
 	mod._silent_reset = true
 	mod._fov_offset = 0
 	mod:set("camera_fov_offset", 0)
+	mod._lock_fov = false
+	mod:set("lock_fov", false, true)
 
 	local world = _get_level_world()
 	if world then
@@ -809,6 +821,10 @@ mod.reset_tab_time_hud = function(silent)
 	end
 	if mod._screen_effects_hidden then
 		mod.set_hide_screen_effects(false)
+	end
+	if mod._hide_outlines then
+		mod._hide_outlines = false
+		mod:set("hide_outlines", false, true)
 	end
 	mod._silent_reset = nil
 
@@ -876,16 +892,21 @@ mod.reset_tab_rigs = function(silent)
 	if mod._orbit_active then
 		mod.set_orbit_active(false)
 	end
-	mod._orbit_paused = false
-	mod:set("orbit_paused", false, true)
+	mod._orbit_paused = true
+	mod:set("orbit_paused", true, true)
 	mod._silent_reset = nil
 
 	mod:set("orbit_target_mode", "character", true)
+	mod:set("orbit_follow_rotation", true, true)
 	mod:set("orbit_facing", "inward", true)
 	mod:set("orbit_direction", "cw", true)
 	mod:set("orbit_speed", 15, true)
 	mod:set("orbit_radius", 4.0, true)
 	mod:set("orbit_height", 0.3, true)
+	mod:set("orbit_side_offset", 0.0, true)
+	mod:set("orbit_angle", 0, true)
+	mod:set("orbit_pitch", 0, true)
+	mod._orbit_pitch = 0
 
 	if not silent then
 		mod:echo(mod:localize("msg_reset_tab_rigs"))
@@ -1221,6 +1242,10 @@ mod.toggle_hide_screen_effects = function()
 	mod:set("hide_screen_effects", not mod:get("hide_screen_effects"), true)
 end
 
+mod.toggle_hide_outlines = function()
+	mod:set("hide_outlines", not mod:get("hide_outlines"), true)
+end
+
 mod.zoom_in = function()
 	if not mod:is_enabled() then
 		return
@@ -1273,6 +1298,13 @@ mod.reset_fov = function(silent)
 	if not silent and not mod._silent_reset then
 		mod:echo(mod:localize("msg_fov_reset"))
 	end
+end
+
+mod.toggle_lock_fov = function()
+	if not mod:is_enabled() then
+		return
+	end
+	mod:set("lock_fov", not mod:get("lock_fov"), true)
 end
 
 mod.tilt_left = function()
@@ -1702,19 +1734,45 @@ mod.toggle_dolly = function()
 	mod:set("dolly_active", not mod:get("dolly_active"), true)
 end
 
+local function _get_unit_heading_rotation(unit)
+	if not unit or not Unit.alive(unit) then
+		return nil
+	end
+
+	local fp_ext = ScriptUnit.has_extension(unit, "first_person_system")
+	if fp_ext and fp_ext.extrapolated_rotation then
+		return fp_ext:extrapolated_rotation()
+	end
+
+	return Unit.world_rotation(unit, 1)
+end
+
+local function _get_unit_shoulder_center(unit, side_offset)
+	local pos = Unit.world_position(unit, 1) + Vector3(0, 0, 1.1)
+	if side_offset and side_offset ~= 0 then
+		local rot = _get_unit_heading_rotation(unit) or Unit.world_rotation(unit, 1)
+		local right = Vector3.flat(Quaternion.right(rot))
+		local len = Vector3.length(right)
+		if len > 0.001 then
+			pos = pos + (right / len) * side_offset
+		end
+	end
+	return pos
+end
+
 local function _get_orbit_center()
 	local target_mode = mod:get("orbit_target_mode") or "character"
+	local side_offset = mod:get("orbit_side_offset") or 0.0
 
 	if target_mode == "character" then
 		local spectated_unit = _get_spectated_puppet_unit()
 		if spectated_unit and Unit.alive(spectated_unit) then
-			return Unit.world_position(spectated_unit, 1) + Vector3(0, 0, 1.1)
+			return _get_unit_shoulder_center(spectated_unit, side_offset)
 		end
 
-		local player = Managers.player and Managers.player:local_player(1)
-		local unit = player and player.player_unit
+		local unit = _get_own_character_unit()
 		if unit and Unit.alive(unit) then
-			return Unit.world_position(unit, 1) + Vector3(0, 0, 1.1)
+			return _get_unit_shoulder_center(unit, side_offset)
 		end
 	end
 
@@ -1724,13 +1782,12 @@ local function _get_orbit_center()
 
 	local spectated_unit = _get_spectated_puppet_unit()
 	if spectated_unit and Unit.alive(spectated_unit) then
-		return Unit.world_position(spectated_unit, 1) + Vector3(0, 0, 1.1)
+		return _get_unit_shoulder_center(spectated_unit, side_offset)
 	end
 
-	local player = Managers.player and Managers.player:local_player(1)
-	local unit = player and player.player_unit
+	local unit = _get_own_character_unit()
 	if unit and Unit.alive(unit) then
-		return Unit.world_position(unit, 1) + Vector3(0, 0, 1.1)
+		return _get_unit_shoulder_center(unit, side_offset)
 	end
 
 	local pos, rot = _get_camera_transform()
@@ -1767,10 +1824,10 @@ mod.orbit_set_center = function()
 	end
 
 	if not center then
-		local player = Managers.player and Managers.player:local_player(1)
-		local unit = player and player.player_unit
+		local side_offset = mod:get("orbit_side_offset") or 0.0
+		local unit = _get_own_character_unit()
 		if unit and Unit.alive(unit) then
-			center = Unit.world_position(unit, 1) + Vector3(0, 0, 1.1)
+			center = _get_unit_shoulder_center(unit, side_offset)
 		else
 			center = pos + Quaternion.forward(rot) * (mod:get("orbit_radius") or 4.0)
 		end
@@ -1822,34 +1879,39 @@ mod.set_orbit_active = function(enabled)
 			mod._orbit_center = Vector3Box(center)
 		end
 
+		local target_mode = mod:get("orbit_target_mode") or "character"
+		if target_mode == "character" then
+			mod._orbit_angle = 0
+			mod:set("orbit_angle", 0, true)
+		else
+			mod._orbit_angle = math.rad(mod:get("orbit_angle") or 0)
+		end
+
 		if not pos or not rot then
 			pos, rot = _get_camera_transform()
 		end
 		if pos and rot then
-			local offset = pos - center
-			local r = math.sqrt(offset.x * offset.x + offset.y * offset.y)
-			if r >= 1.5 then
-				mod._orbit_angle = math.atan2(offset.y, offset.x)
-			else
-				mod._orbit_angle = 0
-			end
 			mod._orbit_pos = Vector3Box(pos)
 			mod._orbit_rot = QuaternionBox(rot)
 		end
 
+		mod._orbit_smooth_center = nil
+		mod._orbit_smooth_fwd = nil
 		mod._orbit_active = true
-		mod._orbit_paused = false
+		mod._orbit_paused = true
 		mod:set("orbit_active", true)
-		mod:set("orbit_paused", false)
+		mod:set("orbit_paused", true)
 		_update_rig_perspective()
 		mod:echo(mod:localize("msg_orbit_started"))
 	else
 		mod._orbit_active = false
-		mod._orbit_paused = false
+		mod._orbit_paused = true
 		mod._orbit_pos = nil
 		mod._orbit_rot = nil
+		mod._orbit_smooth_center = nil
+		mod._orbit_smooth_fwd = nil
 		mod:set("orbit_active", false)
-		mod:set("orbit_paused", false)
+		mod:set("orbit_paused", true)
 		_update_rig_perspective()
 		mod:echo(mod:localize("msg_orbit_stopped"))
 	end
@@ -1875,6 +1937,7 @@ mod.toggle_orbit_pause = function()
 
 	if not mod._orbit_active then
 		mod.set_orbit_active(true)
+		mod.set_orbit_paused(false)
 		return
 	end
 
@@ -2326,6 +2389,26 @@ mod.update = function(dt)
 		local center = _get_orbit_center()
 
 		if center then
+			local target_mode = mod:get("orbit_target_mode") or "character"
+			if target_mode == "character" then
+				if not mod._orbit_smooth_center then
+					mod._orbit_smooth_center = Vector3Box(center)
+				else
+					local prev_c = mod._orbit_smooth_center:unbox()
+					local dist_sq = Vector3.distance_squared(prev_c, center)
+					if dist_sq > 25.0 then
+						mod._orbit_smooth_center:store(center)
+					else
+						local lerp_factor = 1 - math.exp(-25.0 * dt)
+						local smooth_c = Vector3.lerp(prev_c, center, math.clamp(lerp_factor, 0, 1))
+						mod._orbit_smooth_center:store(smooth_c)
+						center = smooth_c
+					end
+				end
+			else
+				mod._orbit_smooth_center = nil
+			end
+
 			if not mod._orbit_paused then
 				local speed = mod:get("orbit_speed") or 15.0
 				local dir = (mod:get("orbit_direction") == "ccw") and 1 or -1
@@ -2336,22 +2419,60 @@ mod.update = function(dt)
 			local radius = mod:get("orbit_radius") or 4.0
 			local height = mod:get("orbit_height") or 0.3
 			local facing = mod:get("orbit_facing") or "inward"
+			local follow_rot = mod:get("orbit_follow_rotation") ~= false
+			local angle = mod._orbit_angle or 0
 
-			local new_x = center.x + radius * math.cos(mod._orbit_angle)
-			local new_y = center.y + radius * math.sin(mod._orbit_angle)
-			local new_z = center.z + height
+			local horiz_dir
+			if target_mode == "character" and follow_rot then
+				local unit = _get_spectated_puppet_unit() or _get_own_character_unit()
+				if unit and Unit.alive(unit) then
+					local rot = _get_unit_heading_rotation(unit) or Unit.world_rotation(unit, 1)
+					local fwd = Vector3.flat(Quaternion.forward(rot))
+					local fwd_len = Vector3.length(fwd)
+					if fwd_len > 0.001 then
+						fwd = fwd / fwd_len
+					else
+						fwd = Vector3(0, 1, 0)
+					end
 
-			local new_pos = Vector3(new_x, new_y, new_z)
+					if not mod._orbit_smooth_fwd then
+						mod._orbit_smooth_fwd = Vector3Box(fwd)
+					else
+						local prev_fwd = mod._orbit_smooth_fwd:unbox()
+						local lerp_factor = 1 - math.exp(-30.0 * dt)
+						local smooth_fwd = Vector3.normalize(Vector3.lerp(prev_fwd, fwd, math.clamp(lerp_factor, 0, 1)))
+						mod._orbit_smooth_fwd:store(smooth_fwd)
+						fwd = smooth_fwd
+					end
+
+					local right = Vector3(fwd.y, -fwd.x, 0)
+					horiz_dir = -fwd * math.cos(angle) + right * math.sin(angle)
+				else
+					horiz_dir = Vector3(math.cos(angle), math.sin(angle), 0)
+				end
+			else
+				mod._orbit_smooth_fwd = nil
+				horiz_dir = Vector3(math.cos(angle), math.sin(angle), 0)
+			end
+
+			local new_pos = center + horiz_dir * radius + Vector3(0, 0, height)
+			local look_target = center + Vector3(0, 0, height)
 			local look_dir
 
 			if facing == "outward" then
-				look_dir = Vector3.normalize(new_pos - center)
+				look_dir = Vector3.normalize(new_pos - look_target)
 			else
-				look_dir = Vector3.normalize(center - new_pos)
+				look_dir = Vector3.normalize(look_target - new_pos)
 			end
 
 			local up = (math.abs(look_dir.z) > 0.99) and Vector3.forward() or Vector3.up()
 			local new_rot = Quaternion.look(look_dir, up)
+
+			local orbit_pitch = mod._orbit_pitch or mod:get("orbit_pitch") or 0
+			if orbit_pitch ~= 0 then
+				local pitch_rot = Quaternion.axis_angle(Quaternion.right(new_rot), math.rad(orbit_pitch))
+				new_rot = Quaternion.multiply(pitch_rot, new_rot)
+			end
 
 			if mod._tilt_angle and mod._tilt_angle ~= 0 then
 				local roll_offset = Quaternion.from_yaw_pitch_roll(0, 0, math.rad(mod._tilt_angle))
@@ -2738,6 +2859,14 @@ mod:hook("ConstantElementChat", "should_draw", function(func, self)
 	return func(self)
 end)
 
+mod:hook("OutlineSystem", "_cinematic_active", function(func, self)
+	if mod:is_enabled() and mod._hide_outlines then
+		return true
+	end
+
+	return func(self)
+end)
+
 mod:hook("CameraManager", "_update_camera_properties",
 	function(func, self, camera, shadow_cull_camera, camera_nodes, camera_data, viewport_name)
 		if mod:is_enabled() then
@@ -2762,6 +2891,19 @@ mod:hook("CameraManager", "_update_camera_properties",
 		end
 
 		func(self, camera, shadow_cull_camera, camera_nodes, camera_data, viewport_name)
+
+		if mod:is_enabled() and mod._lock_fov and camera then
+			local base_user_fov = Application.user_setting("render_settings", "vertical_fov") or 65
+			local fov_offset = mod._fov_offset or mod:get("camera_fov_offset") or 0
+			local locked_fov_rad = math.clamp(math.rad(base_user_fov + fov_offset), math.rad(10), math.rad(150))
+			Camera.set_vertical_fov(camera, locked_fov_rad)
+			if shadow_cull_camera then
+				Camera.set_vertical_fov(shadow_cull_camera, locked_fov_rad)
+			end
+			if camera_data and camera_data.custom_vertical_fov then
+				Camera.set_custom_vertical_fov(camera, locked_fov_rad)
+			end
+		end
 	end)
 
 mod:hook_safe("CameraManager", "shading_callback",
@@ -3053,6 +3195,18 @@ mod.on_setting_changed = function(setting_id)
 		end
 	elseif setting_id == "camera_tilt" then
 		mod._tilt_angle = mod:get("camera_tilt") or 0
+	elseif setting_id == "lock_fov" then
+		mod._lock_fov = mod:get("lock_fov") == true
+		if not mod._silent_reset then
+			mod:echo(mod:localize(mod._lock_fov and "msg_fov_locked" or "msg_fov_unlocked"))
+		end
+	elseif setting_id == "hide_outlines" then
+		mod._hide_outlines = mod:get("hide_outlines") == true
+		if not mod._silent_reset then
+			mod:echo(mod:localize(mod._hide_outlines and "msg_outlines_hidden" or "msg_outlines_shown"))
+		end
+	elseif setting_id == "orbit_pitch" then
+		mod._orbit_pitch = mod:get("orbit_pitch") or 0
 	elseif setting_id == "dof_focal_distance" then
 		mod._dof_distance = mod:get("dof_focal_distance") or 3.0
 	elseif setting_id == "lock_camera_in_menu" then

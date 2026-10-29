@@ -9,9 +9,9 @@ M.WIDTH = 520
 M.DEFAULT_HEIGHT = 540
 M.HEIGHT = 540
 M.TAB_HEIGHTS = {
-	time_hud = 380,
-	camera = 550,
-	rigs = 560,
+	time_hud = 420,
+	camera = 585,
+	rigs = 655,
 	lighting = 660,
 }
 M.LAYER = 950
@@ -267,7 +267,13 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 	_button(ctx, "reset_fov", "Reset", cx_start + slider_w + 10, y + 14, btn_w, 20, false, function()
 		mod.reset_fov()
 	end)
-	y = y + 38
+	y = y + 36
+
+	local lock_fov = mod._lock_fov == true
+	_button(ctx, "lock_fov", lock_fov and "LOCK FOV: ON" or "LOCK FOV: OFF", cx_start, y, w, 28, lock_fov, function()
+		mod.toggle_lock_fov()
+	end)
+	y = y + 36
 
 	_section_header(ctx.items, "CAMERA TILT", cx_start, y, w)
 	y = y + 24
@@ -397,6 +403,13 @@ local function _build_time_hud_tab(ctx, cx_start, cy_start, w)
 	_button(ctx, "toggle_hide_effects", fx_hidden and "FX: HIDDEN" or "SCREEN EFFECTS", cx_start + half_w + 10, y, half_w,
 		32, fx_hidden, function()
 		mod.toggle_hide_screen_effects()
+	end)
+	y = y + 40
+
+	local outlines_hidden = mod._hide_outlines
+	_button(ctx, "toggle_hide_outlines", outlines_hidden and "OUTLINES: HIDDEN" or "HIDE OUTLINES", cx_start, y, w,
+		32, outlines_hidden, function()
+		mod.toggle_hide_outlines()
 	end)
 end
 
@@ -756,7 +769,9 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 		function()
 			mod.toggle_orbit()
 		end)
-	_button(ctx, "orbit_pause", orbit_paused and "PAUSED" or "PAUSE", cx_start + third_w + 10, y, third_w, 30, orbit_paused,
+	local play_label = (not orbit_active or orbit_paused) and "PLAY" or "PAUSE"
+	local play_active = orbit_active and not orbit_paused
+	_button(ctx, "orbit_pause", play_label, cx_start + third_w + 10, y, third_w, 30, play_active,
 		function()
 			mod.toggle_orbit_pause()
 		end)
@@ -794,6 +809,32 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 	end)
 	y = y + 32
 
+	local cur_deg = math.floor((math.deg(mod._orbit_angle or 0) % 360) + 0.5) % 360
+	local angle_label
+	if cur_deg >= 340 or cur_deg <= 20 then
+		angle_label = string.format("%d° (Behind)", cur_deg)
+	elseif cur_deg > 20 and cur_deg < 70 then
+		angle_label = string.format("%d° (Rear Right)", cur_deg)
+	elseif cur_deg >= 70 and cur_deg <= 110 then
+		angle_label = string.format("%d° (Right)", cur_deg)
+	elseif cur_deg > 110 and cur_deg < 160 then
+		angle_label = string.format("%d° (Front Right)", cur_deg)
+	elseif cur_deg >= 160 and cur_deg <= 200 then
+		angle_label = string.format("%d° (Front)", cur_deg)
+	elseif cur_deg > 200 and cur_deg < 250 then
+		angle_label = string.format("%d° (Front Left)", cur_deg)
+	elseif cur_deg >= 250 and cur_deg <= 290 then
+		angle_label = string.format("%d° (Left)", cur_deg)
+	else
+		angle_label = string.format("%d° (Rear Left)", cur_deg)
+	end
+	_slider(ctx, "orbit_angle", "Track Position", angle_label, cx_start, y, w, 28, 0, 360,
+		cur_deg, 1, 0, function(v)
+		mod._orbit_angle = math.rad(v % 360)
+		mod:set("orbit_angle", v % 360, true)
+	end)
+	y = y + 32
+
 	local orbit_radius = mod:get("orbit_radius") or 4.0
 	_slider(ctx, "orbit_radius", "Orbit Radius", string.format("%.1f m", orbit_radius), cx_start, y, w, 28, 1.0, 30.0,
 		orbit_radius, 0.5, 1, function(v)
@@ -805,6 +846,29 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 	_slider(ctx, "orbit_height", "Orbit Height Offset", string.format("%+.1f m", orbit_height), cx_start, y, w, 28, -5.0,
 		5.0, orbit_height, 0.1, 1, function(v)
 		mod:set("orbit_height", v, true)
+	end)
+	y = y + 32
+
+	local orbit_pitch = mod:get("orbit_pitch") or 0
+	_slider(ctx, "orbit_pitch", "Orbit Pitch Angle", string.format("%+d°", orbit_pitch), cx_start, y, w, 28, -45,
+		45, orbit_pitch, 1, 0, function(v)
+		mod:set("orbit_pitch", v, true)
+		mod._orbit_pitch = v
+	end)
+	y = y + 32
+
+	local orbit_side_offset = mod:get("orbit_side_offset") or 0.0
+	local side_label
+	if math.abs(orbit_side_offset) < 0.05 then
+		side_label = "Center (0.0 m)"
+	elseif orbit_side_offset > 0 then
+		side_label = string.format("Right (+%.1f m)", orbit_side_offset)
+	else
+		side_label = string.format("Left (%.1f m)", orbit_side_offset)
+	end
+	_slider(ctx, "orbit_side_offset", "Orbit Shoulder Offset", side_label, cx_start, y, w, 28, -2.0,
+		2.0, orbit_side_offset, 0.1, 1, function(v)
+		mod:set("orbit_side_offset", v, true)
 	end)
 end
 

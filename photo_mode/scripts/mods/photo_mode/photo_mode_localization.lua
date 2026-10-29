@@ -194,6 +194,24 @@ return {
 	msg_screen_effects_shown = {
 		en = "Screen Effects: Visible",
 	},
+	hide_outlines = {
+		en = "Hide All Outlines",
+	},
+	hide_outlines_description = {
+		en = "Stop rendering player silhouettes, enemy outlines, tags, and item highlights.",
+	},
+	toggle_hide_outlines = {
+		en = "Toggle Outlines Keybind",
+	},
+	toggle_hide_outlines_description = {
+		en = "Hotkey to toggle character and object highlight outlines on or off.",
+	},
+	msg_outlines_hidden = {
+		en = "Outlines: Hidden",
+	},
+	msg_outlines_shown = {
+		en = "Outlines: Visible",
+	},
 	fov_settings = {
 		en = "Lens Zoom / FOV",
 	},
@@ -226,6 +244,24 @@ return {
 	},
 	msg_fov_reset = {
 		en = "FOV Offset: Reset to 0°",
+	},
+	lock_fov = {
+		en = "Lock FOV",
+	},
+	lock_fov_description = {
+		en = "Lock field of view to prevent dynamic zooms when sprinting, aiming, or sliding.",
+	},
+	toggle_lock_fov = {
+		en = "Toggle Lock FOV",
+	},
+	toggle_lock_fov_description = {
+		en = "Hotkey to lock or unlock the camera field of view.",
+	},
+	msg_fov_locked = {
+		en = "FOV Locked: On",
+	},
+	msg_fov_unlocked = {
+		en = "FOV Locked: Off",
 	},
 	tilt_settings = {
 		en = "Dutch Angle / Tilt",
@@ -653,6 +689,12 @@ return {
 	orbit_target_custom = {
 		en = "Recorded Point",
 	},
+	orbit_follow_rotation = {
+		en = "Follow Character Heading",
+	},
+	orbit_follow_rotation_description = {
+		en = "Camera turns with your character like a third-person camera.",
+	},
 	orbit_facing = {
 		en = "Camera Facing",
 	},
@@ -671,6 +713,12 @@ return {
 	orbit_speed_description = {
 		en = "How fast orbit spins.",
 	},
+	orbit_angle = {
+		en = "Track Position",
+	},
+	orbit_angle_description = {
+		en = "Current position along the orbit track (0° to 360°).",
+	},
 	orbit_radius = {
 		en = "Orbit Distance",
 	},
@@ -682,6 +730,18 @@ return {
 	},
 	orbit_height_description = {
 		en = "Height above or below center.",
+	},
+	orbit_pitch = {
+		en = "Orbit Pitch Angle",
+	},
+	orbit_pitch_description = {
+		en = "Tilt camera vertically up or down independently of height (-45° to +45°).",
+	},
+	orbit_side_offset = {
+		en = "Orbit Shoulder Offset",
+	},
+	orbit_side_offset_description = {
+		en = "Horizontal side offset from character center (left or right shoulder).",
 	},
 	orbit_direction = {
 		en = "Orbit Direction",
