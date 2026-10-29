@@ -123,8 +123,8 @@ To do:
 
 **Orbit Camera Rig**
 - Orbit Rig Toggle
-- Play/Stop Orbit (Hotkey)
-- Pause Orbit (Hotkey)
+- Toggle Orbit (Hotkey)
+- Play/Pause Orbit (Hotkey)
 - Set Orbit Center (Hotkey)
 - Orbit Target [Follow, Character, Recorded Point]
 - Camera Facing [Inward, Outward]

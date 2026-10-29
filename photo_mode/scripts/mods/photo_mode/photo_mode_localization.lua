@@ -666,16 +666,16 @@ return {
 		en = "Circles camera around a target.",
 	},
 	toggle_orbit = {
-		en = "Play/Stop Orbit Keybind",
+		en = "Toggle Orbit Keybind",
 	},
 	toggle_orbit_description = {
-		en = "Hotkey to start or stop orbit.",
+		en = "Hotkey to toggle orbit on or off.",
 	},
 	toggle_orbit_pause = {
-		en = "Pause Orbit Keybind",
+		en = "Play/Pause Orbit Keybind",
 	},
 	toggle_orbit_pause_description = {
-		en = "Hotkey to pause/resume orbit.",
+		en = "Hotkey to play or pause orbit rotation.",
 	},
 	orbit_set_center = {
 		en = "Set Orbit Center Keybind",
