@@ -180,6 +180,14 @@ return {
 				tab = mod:localize("tab_camera"),
 				sub_widgets = {
 					{
+						setting_id = "camera_fov_offset",
+						type = "numeric",
+						default_value = 0,
+						range = { -60, 60 },
+						decimals_number = 0,
+						step_size_value = 1,
+					},
+					{
 						setting_id = "zoom_in",
 						type = "keybind",
 						default_value = {},
@@ -206,14 +214,6 @@ return {
 						keybind_type = "function_call",
 						function_name = "reset_fov",
 					},
-					{
-						setting_id = "camera_fov_offset",
-						type = "numeric",
-						default_value = 0,
-						range = { -60, 60 },
-						decimals_number = 0,
-						step_size_value = 1,
-					},
 				},
 			},
 			{
@@ -221,6 +221,14 @@ return {
 				type = "group",
 				tab = mod:localize("tab_camera"),
 				sub_widgets = {
+					{
+						setting_id = "camera_tilt",
+						type = "numeric",
+						default_value = 0,
+						range = { -45, 45 },
+						decimals_number = 0,
+						step_size_value = 1,
+					},
 					{
 						setting_id = "tilt_left",
 						type = "keybind",
@@ -247,14 +255,6 @@ return {
 						keybind_trigger = "pressed",
 						keybind_type = "function_call",
 						function_name = "reset_tilt",
-					},
-					{
-						setting_id = "camera_tilt",
-						type = "numeric",
-						default_value = 0,
-						range = { -45, 45 },
-						decimals_number = 0,
-						step_size_value = 1,
 					},
 				},
 			},
@@ -481,19 +481,26 @@ return {
 						type = "checkbox",
 						default_value = true,
 					},
+				},
+			},
+			{
+				setting_id = "map_lighting_settings",
+				type = "group",
+				tab = mod:localize("tab_lighting"),
+				sub_widgets = {
 					{
-						setting_id = "blackout_active",
+						setting_id = "map_lights",
 						type = "checkbox",
-						default_value = false,
+						default_value = true,
 					},
 					{
-						setting_id = "toggle_blackout",
+						setting_id = "toggle_map_lights",
 						type = "keybind",
 						default_value = {},
 						keybind_global = true,
 						keybind_trigger = "pressed",
 						keybind_type = "function_call",
-						function_name = "toggle_blackout_zone",
+						function_name = "toggle_map_lights",
 					},
 					{
 						setting_id = "exposure_compensation",

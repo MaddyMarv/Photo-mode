@@ -82,6 +82,11 @@ To do:
 - Lantern Light
 - Lantern (Hotkey)
 
+**Map Lights & Exposure**
+- Map Lights (Toggle)
+- Toggle Map Lights (Hotkey)
+- Scene Exposure
+
 **Light Properties**
 - Light Type [Spotlight, Omni]
 - Light Color

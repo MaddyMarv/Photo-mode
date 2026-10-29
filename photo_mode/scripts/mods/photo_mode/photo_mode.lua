@@ -692,6 +692,7 @@ local function _cleanup_all()
 		mod.restore_all_extinguished_lights(true)
 		mod._blackout_active = false
 	end
+	mod:set("map_lights", true, true)
 	mod:set("blackout_active", false, true)
 	mod:set("exposure_compensation", 0, true)
 	mod._silent_clear = true
@@ -835,6 +836,7 @@ mod.reset_tab_lighting = function(silent)
 	end
 	mod._silent_reset = nil
 
+	mod:set("map_lights", true, true)
 	mod:set("blackout_active", false, true)
 	mod:set("exposure_compensation", 0, true)
 	mod:set("light_type", "spot", true)
@@ -958,12 +960,12 @@ mod.set_in_game_actions = function(allowed)
 	end
 
 	mod._actions_allowed = allowed
-	mod:set("allow_in_game_actions", allowed, true)
+	mod:set("allow_in_game_actions", allowed)
 	mod:echo(mod:localize(mod._actions_allowed and "msg_actions_allowed" or "msg_actions_blocked"))
 end
 
 mod.toggle_in_game_actions = function()
-	mod.set_in_game_actions(not (mod._actions_allowed ~= false))
+	mod:set("allow_in_game_actions", not (mod:get("allow_in_game_actions") ~= false), true)
 end
 
 mod.set_freeze_time = function(enabled)
@@ -998,7 +1000,7 @@ mod.set_freeze_time = function(enabled)
 end
 
 mod.toggle_freeze_time = function()
-	mod.set_freeze_time(not mod._time_frozen)
+	mod:set("freeze_time", not mod:get("freeze_time"), true)
 end
 
 mod.step_frame = function()
@@ -1058,7 +1060,7 @@ mod.set_slomo_active = function(enabled)
 end
 
 mod.toggle_slomo = function()
-	mod.set_slomo_active(not mod._slomo_active)
+	mod:set("slomo_active", not mod:get("slomo_active"), true)
 end
 
 mod.increase_slomo_speed = function()
@@ -1130,7 +1132,7 @@ mod.set_hide_hud = function(enabled)
 end
 
 mod.toggle_hide_hud = function()
-	mod.set_hide_hud(not mod._hud_hidden)
+	mod:set("hide_hud", not mod:get("hide_hud"), true)
 end
 
 mod.set_hide_chat = function(enabled)
@@ -1144,7 +1146,7 @@ mod.set_hide_chat = function(enabled)
 end
 
 mod.toggle_hide_chat = function()
-	mod.set_hide_chat(not mod._chat_hidden)
+	mod:set("hide_chat", not mod:get("hide_chat"), true)
 end
 
 mod.set_hide_arms = function(enabled)
@@ -1171,7 +1173,7 @@ mod.set_hide_arms = function(enabled)
 end
 
 mod.toggle_hide_arms = function()
-	mod.set_hide_arms(not mod._arms_hidden)
+	mod:set("hide_arms", not mod:get("hide_arms"), true)
 end
 
 mod.set_hide_screen_effects = function(enabled)
@@ -1216,7 +1218,7 @@ mod.set_hide_screen_effects = function(enabled)
 end
 
 mod.toggle_hide_screen_effects = function()
-	mod.set_hide_screen_effects(not mod._screen_effects_hidden)
+	mod:set("hide_screen_effects", not mod:get("hide_screen_effects"), true)
 end
 
 mod.zoom_in = function()
@@ -1349,7 +1351,7 @@ mod.set_tripod_active = function(enabled)
 end
 
 mod.toggle_tripod = function()
-	mod.set_tripod_active(not mod._tripod_active)
+	mod:set("tripod_active", not mod:get("tripod_active"), true)
 end
 
 local function _calculate_dolly_distances()
@@ -1697,7 +1699,7 @@ mod.set_dolly_active = function(enabled)
 end
 
 mod.toggle_dolly = function()
-	mod.set_dolly_active(not mod._dolly_active)
+	mod:set("dolly_active", not mod:get("dolly_active"), true)
 end
 
 local function _get_orbit_center()
@@ -1880,7 +1882,7 @@ mod.toggle_orbit_pause = function()
 end
 
 mod.toggle_orbit = function()
-	mod.set_orbit_active(not mod._orbit_active)
+	mod:set("orbit_active", not mod:get("orbit_active"), true)
 end
 
 mod.set_dof_active = function(enabled)
@@ -1912,7 +1914,7 @@ mod.set_dof_active = function(enabled)
 end
 
 mod.toggle_dof = function()
-	mod.set_dof_active(not mod._dof_active)
+	mod:set("dof_active", not mod:get("dof_active"), true)
 end
 
 mod.inc_dof_distance = function()
@@ -1969,7 +1971,7 @@ mod.set_mouse_smoothing = function(enabled)
 end
 
 mod.toggle_mouse_smoothing = function()
-	mod.set_mouse_smoothing(not mod._mouse_smoothing)
+	mod:set("mouse_smoothing", not mod:get("mouse_smoothing"), true)
 end
 
 mod.place_light = function()
@@ -2070,17 +2072,11 @@ mod.restore_all_extinguished_lights = function(silent)
 	end
 end
 
-mod.toggle_blackout_zone = function()
-	if mod._blackout_active then
-		mod._blackout_active = false
-		mod:set("blackout_active", false, true)
-		mod.restore_all_extinguished_lights()
-	else
-		mod._blackout_active = true
-		mod:set("blackout_active", true, true)
-		mod.extinguish_map_lights()
-	end
+mod.toggle_map_lights = function()
+	mod:set("map_lights", not (mod:get("map_lights") ~= false), true)
 end
+mod.toggle_blackout = mod.toggle_map_lights
+mod.toggle_blackout_zone = mod.toggle_map_lights
 
 mod.delete_selected_light = function()
 	if not mod:is_enabled() then
@@ -2158,7 +2154,7 @@ mod.set_lantern_active = function(enabled)
 end
 
 mod.toggle_lantern = function()
-	mod.set_lantern_active(not mod._lantern_active)
+	mod:set("lantern_active", not mod:get("lantern_active"), true)
 end
 
 mod.update = function(dt)
@@ -3062,7 +3058,10 @@ mod.on_setting_changed = function(setting_id)
 	elseif setting_id == "lock_camera_in_menu" then
 		mod._camera_locked = mod:get("lock_camera_in_menu") ~= false
 	elseif setting_id == "allow_in_game_actions" then
-		mod._actions_allowed = mod:get("allow_in_game_actions") ~= false
+		local val = mod:get("allow_in_game_actions") ~= false
+		if val ~= mod._actions_allowed then
+			mod.set_in_game_actions(val)
+		end
 	elseif setting_id == "mouse_smoothing" then
 		local val = mod:get("mouse_smoothing")
 		if val ~= mod._mouse_smoothing then
@@ -3072,10 +3071,17 @@ mod.on_setting_changed = function(setting_id)
 		mod._mouse_smoothing_amount = mod:get("mouse_smoothing_amount") or 0.65
 	elseif setting_id == "mouse_smoothing_speed" then
 		mod._mouse_smoothing_speed = mod:get("mouse_smoothing_speed") or 1.0
-	elseif setting_id == "blackout_active" then
-		local val = mod:get("blackout_active") == true
-		if val ~= mod._blackout_active then
-			mod.toggle_blackout_zone()
+	elseif setting_id == "map_lights" or setting_id == "blackout_active" then
+		local lights_on = mod:get("map_lights") ~= false
+		local should_be_blackout = not lights_on
+		if should_be_blackout ~= mod._blackout_active then
+			if should_be_blackout then
+				mod._blackout_active = true
+				mod.extinguish_map_lights()
+			else
+				mod._blackout_active = false
+				mod.restore_all_extinguished_lights()
+			end
 		end
 	end
 

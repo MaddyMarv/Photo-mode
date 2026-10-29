@@ -489,9 +489,9 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	y = y + 24
 
 	local map_lights_on = not mod._blackout_active
-	_button(ctx, "toggle_blackout", map_lights_on and "Map Lights: ON" or "Map Lights: OFF", cx_start, y,
+	_button(ctx, "toggle_map_lights", map_lights_on and "Map Lights: ON" or "Map Lights: OFF", cx_start, y,
 		w, 30, map_lights_on, function()
-		mod.toggle_blackout_zone()
+		mod.toggle_map_lights()
 	end)
 	y = y + 36
 
