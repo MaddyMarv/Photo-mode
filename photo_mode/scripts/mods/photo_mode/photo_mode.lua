@@ -47,7 +47,7 @@ mod._step_frames_remaining = nil
 
 mod._placed_lights = {}
 mod._selected_light_index = nil
-mod._lantern_active = false
+mod._lantern_active = mod:get("lantern_active") or false
 mod._lantern_unit = nil
 mod._blackout_active = false
 mod._extinguished_units = {}
@@ -618,7 +618,7 @@ local function _ensure_hud_group()
 	end
 end
 
-local function _destroy_lantern()
+local function _destroy_lantern_unit()
 	local world = _get_level_world()
 
 	if world and mod._lantern_unit and Unit.alive(mod._lantern_unit) then
@@ -626,7 +626,6 @@ local function _destroy_lantern()
 	end
 
 	mod._lantern_unit = nil
-	mod._lantern_active = false
 end
 
 local function _reset_time_state()
@@ -688,13 +687,15 @@ end
 local function _cleanup_all()
 	mod.close_photo_menu()
 	_reset_time_state()
-	_destroy_lantern()
+	_destroy_lantern_unit()
 	if mod._blackout_active then
 		mod.restore_all_extinguished_lights(true)
 		mod._blackout_active = false
 	end
+	table.clear(mod._extinguished_units)
 	mod:set("map_lights", true, true)
 	mod:set("blackout_active", false, true)
+
 	mod._silent_clear = true
 	mod.clear_lights()
 	mod._silent_clear = nil
@@ -723,7 +724,6 @@ local function _cleanup_all()
 
 	mod:set("freeze_time", false)
 	mod:set("slomo_active", false)
-	mod:set("lantern_active", false)
 	mod:set("tripod_active", false)
 	mod:set("dolly_active", false)
 	mod:set("orbit_active", false)
@@ -2134,7 +2134,7 @@ mod.undo_light = function()
 	end
 end
 
-mod.extinguish_map_lights = function()
+mod.extinguish_map_lights = function(silent)
 	local world = _get_level_world()
 	if not world then
 		return
@@ -2158,7 +2158,9 @@ mod.extinguish_map_lights = function()
 		end
 	end
 
-	mod:echo(mod:localize("msg_blackout_on"))
+	if not silent and not mod._silent_reset then
+		mod:echo(mod:localize("msg_blackout_on"))
+	end
 end
 
 mod.restore_all_extinguished_lights = function(silent)
@@ -2247,7 +2249,7 @@ mod.set_lantern_active = function(enabled)
 	mod:set("lantern_active", enabled)
 
 	if not mod._lantern_active then
-		_destroy_lantern()
+		_destroy_lantern_unit()
 		if not mod._silent_reset then
 			mod:echo(mod:localize("msg_lantern_off"))
 		end
