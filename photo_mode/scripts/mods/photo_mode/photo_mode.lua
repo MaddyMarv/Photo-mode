@@ -56,7 +56,7 @@ mod._exposure_was_applied = false
 mod._fov_offset = mod:get("camera_fov_offset") or 0
 mod._lock_fov = mod:get("lock_fov") or false
 mod._tilt_angle = mod:get("camera_tilt") or 0
-mod._dof_active = false
+mod._dof_active = mod:get("dof_active") or false
 mod._dof_distance = mod:get("dof_focal_distance") or 3.0
 mod._dof_was_applied = false
 mod._original_render_dof = nil
@@ -685,19 +685,9 @@ local function _reset_hud_state()
 	end
 end
 
-local function _reset_camera_state()
-	if mod._dof_active and mod._original_render_dof == "false" and Application.set_render_setting then
-		Application.set_render_setting("dof_enabled", "false")
-	end
-
-	mod._dof_active = false
-	mod._original_render_dof = nil
-end
-
 local function _cleanup_all()
 	mod.close_photo_menu()
 	_reset_time_state()
-	_reset_camera_state()
 	_destroy_lantern()
 	if mod._blackout_active then
 		mod.restore_all_extinguished_lights(true)
@@ -733,7 +723,6 @@ local function _cleanup_all()
 
 	mod:set("freeze_time", false)
 	mod:set("slomo_active", false)
-	mod:set("dof_active", false)
 	mod:set("lantern_active", false)
 	mod:set("tripod_active", false)
 	mod:set("dolly_active", false)
