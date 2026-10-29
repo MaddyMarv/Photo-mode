@@ -896,7 +896,7 @@ mod.reset_tab_rigs = function(silent)
 	mod:set("orbit_paused", true, true)
 	mod._silent_reset = nil
 
-	mod:set("orbit_target_mode", "character", true)
+	mod:set("orbit_target_mode", "follow", true)
 	mod:set("orbit_follow_rotation", true, true)
 	mod:set("orbit_facing", "inward", true)
 	mod:set("orbit_direction", "cw", true)
@@ -1761,10 +1761,10 @@ local function _get_unit_shoulder_center(unit, side_offset)
 end
 
 local function _get_orbit_center()
-	local target_mode = mod:get("orbit_target_mode") or "character"
+	local target_mode = mod:get("orbit_target_mode") or "follow"
 	local side_offset = mod:get("orbit_side_offset") or 0.0
 
-	if target_mode == "character" then
+	if target_mode == "character" or target_mode == "follow" then
 		local spectated_unit = _get_spectated_puppet_unit()
 		if spectated_unit and Unit.alive(spectated_unit) then
 			return _get_unit_shoulder_center(spectated_unit, side_offset)
@@ -1879,8 +1879,8 @@ mod.set_orbit_active = function(enabled)
 			mod._orbit_center = Vector3Box(center)
 		end
 
-		local target_mode = mod:get("orbit_target_mode") or "character"
-		if target_mode == "character" then
+		local target_mode = mod:get("orbit_target_mode") or "follow"
+		if target_mode == "character" or target_mode == "follow" then
 			mod._orbit_angle = 0
 			mod:set("orbit_angle", 0, true)
 		else
@@ -2389,8 +2389,10 @@ mod.update = function(dt)
 		local center = _get_orbit_center()
 
 		if center then
-			local target_mode = mod:get("orbit_target_mode") or "character"
-			if target_mode == "character" then
+			local target_mode = mod:get("orbit_target_mode") or "follow"
+			local is_char = (target_mode == "character" or target_mode == "follow")
+			local follow_rot = (target_mode == "follow") or (target_mode == "character" and mod:get("orbit_follow_rotation") == true)
+			if is_char then
 				if not mod._orbit_smooth_center then
 					mod._orbit_smooth_center = Vector3Box(center)
 				else
@@ -2419,11 +2421,10 @@ mod.update = function(dt)
 			local radius = mod:get("orbit_radius") or 4.0
 			local height = mod:get("orbit_height") or 0.3
 			local facing = mod:get("orbit_facing") or "inward"
-			local follow_rot = mod:get("orbit_follow_rotation") ~= false
 			local angle = mod._orbit_angle or 0
 
 			local horiz_dir
-			if target_mode == "character" and follow_rot then
+			if is_char and follow_rot then
 				local unit = _get_spectated_puppet_unit() or _get_own_character_unit()
 				if unit and Unit.alive(unit) then
 					local rot = _get_unit_heading_rotation(unit) or Unit.world_rotation(unit, 1)

@@ -722,16 +722,12 @@ return {
 					{
 						setting_id = "orbit_target_mode",
 						type = "dropdown",
-						default_value = "character",
+						default_value = "follow",
 						options = {
+							{ text = "orbit_target_follow", value = "follow" },
 							{ text = "orbit_target_character", value = "character" },
 							{ text = "orbit_target_custom", value = "custom" },
 						},
-					},
-					{
-						setting_id = "orbit_follow_rotation",
-						type = "checkbox",
-						default_value = true,
 					},
 					{
 						setting_id = "orbit_facing",

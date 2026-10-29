@@ -780,11 +780,30 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 	end)
 	y = y + 36
 
-	local target_mode = mod:get("orbit_target_mode") or "character"
-	_button(ctx, "orbit_target", target_mode == "custom" and "Target: CUSTOM" or "Target: CHAR", cx_start, y, third_w, 28,
+	local target_mode = mod:get("orbit_target_mode") or "follow"
+	local follow_rot = (target_mode == "follow") or (target_mode == "character" and mod:get("orbit_follow_rotation") == true)
+
+	local target_label
+	if target_mode == "custom" then
+		target_label = "Target: CUSTOM"
+	elseif follow_rot then
+		target_label = "Target: FOLLOW"
+	else
+		target_label = "Target: CHAR"
+	end
+
+	_button(ctx, "orbit_target", target_label, cx_start, y, third_w, 28,
 		false, function()
-		local next_t = target_mode == "character" and "custom" or "character"
-		mod:set("orbit_target_mode", next_t, true)
+		if target_mode == "custom" then
+			mod:set("orbit_target_mode", "follow", true)
+			mod:set("orbit_follow_rotation", true, true)
+		elseif follow_rot then
+			mod:set("orbit_target_mode", "character", true)
+			mod:set("orbit_follow_rotation", false, true)
+		else
+			mod:set("orbit_target_mode", "custom", true)
+			mod:set("orbit_follow_rotation", false, true)
+		end
 	end)
 
 	local facing = mod:get("orbit_facing") or "inward"
@@ -810,23 +829,44 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 	y = y + 32
 
 	local cur_deg = math.floor((math.deg(mod._orbit_angle or 0) % 360) + 0.5) % 360
+	local is_char_follow = ((target_mode == "character" or target_mode == "follow") and follow_rot)
 	local angle_label
-	if cur_deg >= 340 or cur_deg <= 20 then
-		angle_label = string.format("%d° (Behind)", cur_deg)
-	elseif cur_deg > 20 and cur_deg < 70 then
-		angle_label = string.format("%d° (Rear Right)", cur_deg)
-	elseif cur_deg >= 70 and cur_deg <= 110 then
-		angle_label = string.format("%d° (Right)", cur_deg)
-	elseif cur_deg > 110 and cur_deg < 160 then
-		angle_label = string.format("%d° (Front Right)", cur_deg)
-	elseif cur_deg >= 160 and cur_deg <= 200 then
-		angle_label = string.format("%d° (Front)", cur_deg)
-	elseif cur_deg > 200 and cur_deg < 250 then
-		angle_label = string.format("%d° (Front Left)", cur_deg)
-	elseif cur_deg >= 250 and cur_deg <= 290 then
-		angle_label = string.format("%d° (Left)", cur_deg)
+	if is_char_follow then
+		if cur_deg >= 340 or cur_deg <= 20 then
+			angle_label = string.format("%d° (Behind)", cur_deg)
+		elseif cur_deg > 20 and cur_deg < 70 then
+			angle_label = string.format("%d° (Rear Right)", cur_deg)
+		elseif cur_deg >= 70 and cur_deg <= 110 then
+			angle_label = string.format("%d° (Right)", cur_deg)
+		elseif cur_deg > 110 and cur_deg < 160 then
+			angle_label = string.format("%d° (Front Right)", cur_deg)
+		elseif cur_deg >= 160 and cur_deg <= 200 then
+			angle_label = string.format("%d° (Front)", cur_deg)
+		elseif cur_deg > 200 and cur_deg < 250 then
+			angle_label = string.format("%d° (Front Left)", cur_deg)
+		elseif cur_deg >= 250 and cur_deg <= 290 then
+			angle_label = string.format("%d° (Left)", cur_deg)
+		else
+			angle_label = string.format("%d° (Rear Left)", cur_deg)
+		end
 	else
-		angle_label = string.format("%d° (Rear Left)", cur_deg)
+		if cur_deg >= 340 or cur_deg <= 20 then
+			angle_label = string.format("%d° (East)", cur_deg)
+		elseif cur_deg > 20 and cur_deg < 70 then
+			angle_label = string.format("%d° (North-East)", cur_deg)
+		elseif cur_deg >= 70 and cur_deg <= 110 then
+			angle_label = string.format("%d° (North)", cur_deg)
+		elseif cur_deg > 110 and cur_deg < 160 then
+			angle_label = string.format("%d° (North-West)", cur_deg)
+		elseif cur_deg >= 160 and cur_deg <= 200 then
+			angle_label = string.format("%d° (West)", cur_deg)
+		elseif cur_deg > 200 and cur_deg < 250 then
+			angle_label = string.format("%d° (South-West)", cur_deg)
+		elseif cur_deg >= 250 and cur_deg <= 290 then
+			angle_label = string.format("%d° (South)", cur_deg)
+		else
+			angle_label = string.format("%d° (South-East)", cur_deg)
+		end
 	end
 	_slider(ctx, "orbit_angle", "Track Position", angle_label, cx_start, y, w, 28, 0, 360,
 		cur_deg, 1, 0, function(v)

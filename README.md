@@ -10,10 +10,10 @@ Note: In-game 'Depth of Field Quality' must be set to Medium or High in Darktide
 - [Perspectives](https://www.nexusmods.com/warhammer40kdarktide/mods/111) - Third-person camera view for seeing your own character and camera angles.
 - [Transparent Mod Settings](https://www.nexusmods.com/warhammer40kdarktide/mods/1205) - Lets you see through the mod menu while adjusting lighting and camera settings live.
 - [Immersive Evasion](https://www.nexusmods.com/warhammer40kdarktide/mods/345) - For cooler, more accurate sliding and dodging animations in first person.
+- [Replays](https://www.nexusmods.com/warhammer40kdarktide/mods/1365) - Record and playback matches with full camera rig, puppet tracking, and cinematic time controls.
 
 To do: 
-- Add character posing with emotes/end of screen with the ability to clone a posed character
-- Add integration with [Replays](https://www.nexusmods.com/warhammer40kdarktide/mods/1365)
+- Add character posing with emotes/end of screen with the ability to clone a posed character.
 
 <details>
 <summary><b>Mod Settings / Commands</b></summary>
@@ -124,11 +124,10 @@ To do:
 - Play/Stop Orbit (Hotkey)
 - Pause Orbit (Hotkey)
 - Set Orbit Center (Hotkey)
-- Orbit Target [Your Character, Recorded Point]
-- Follow Character Heading
+- Orbit Target [Follow, Character, Recorded Point]
 - Camera Facing [Inward, Outward]
 - Orbit Speed
-- Track Position (0° - 360°)
+- Track Position
 - Orbit Distance
 - Orbit Height Offset
 - Orbit Pitch Angle

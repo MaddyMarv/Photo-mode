@@ -683,17 +683,14 @@ return {
 	orbit_target_mode_description = {
 		en = "Orbit character or custom point.",
 	},
+	orbit_target_follow = {
+		en = "Follow Character",
+	},
 	orbit_target_character = {
-		en = "Your Character",
+		en = "Static Character",
 	},
 	orbit_target_custom = {
 		en = "Recorded Point",
-	},
-	orbit_follow_rotation = {
-		en = "Follow Character Heading",
-	},
-	orbit_follow_rotation_description = {
-		en = "Camera turns with your character like a third-person camera.",
 	},
 	orbit_facing = {
 		en = "Camera Facing",
