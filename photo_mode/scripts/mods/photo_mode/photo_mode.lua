@@ -84,10 +84,10 @@ mod._orbit_rot = nil
 mod._orbit_center = nil
 mod._orbit_smooth_center = nil
 mod._orbit_smooth_fwd = nil
-mod._orbit_angle = 0
-mod._orbit_height = 0
-mod._orbit_pitch = 0
-mod._orbit_side_offset = 0
+mod._orbit_angle = math.rad(mod:get("orbit_angle") or 0)
+mod._orbit_height = mod:get("orbit_height") or 0.3
+mod._orbit_pitch = mod:get("orbit_pitch") or 0
+mod._orbit_side_offset = mod:get("orbit_side_offset") or 0.0
 mod._orbit_paused = false
 mod._hide_outlines = mod:get("hide_outlines") or false
 
@@ -686,10 +686,6 @@ local function _reset_hud_state()
 end
 
 local function _reset_camera_state()
-	mod._fov_offset = 0
-	mod._tilt_angle = 0
-	mod:set("camera_tilt", 0)
-
 	if mod._dof_active and mod._original_render_dof == "false" and Application.set_render_setting then
 		Application.set_render_setting("dof_enabled", "false")
 	end
@@ -710,7 +706,6 @@ local function _cleanup_all()
 	end
 	mod:set("map_lights", true, true)
 	mod:set("blackout_active", false, true)
-	mod:set("exposure_compensation", 0, true)
 	mod._silent_clear = true
 	mod.clear_lights()
 	mod._silent_clear = nil
@@ -729,30 +724,26 @@ local function _cleanup_all()
 	mod._selected_dolly_index = nil
 	table.clear(mod._dolly_points)
 
+	mod._orbit_active = false
+	mod._orbit_paused = true
+	mod._orbit_pos = nil
+	mod._orbit_rot = nil
+	mod._orbit_center = nil
+	mod._orbit_smooth_center = nil
+	mod._orbit_smooth_fwd = nil
+
 	mod:set("freeze_time", false)
 	mod:set("slomo_active", false)
 	mod:set("hide_hud", false)
 	mod:set("hide_chat", false)
 	mod:set("hide_arms", false)
 	mod:set("hide_screen_effects", false)
-	mod:set("camera_fov_offset", 0)
-	mod:set("camera_tilt", 0)
 	mod:set("dof_active", false)
 	mod:set("lantern_active", false)
 	mod:set("tripod_active", false)
 	mod:set("dolly_active", false)
 	mod:set("orbit_active", false)
-
-	mod._orbit_active = false
-	mod._orbit_pos = nil
-	mod._orbit_rot = nil
-	mod._orbit_center = nil
-	mod._orbit_smooth_center = nil
-	mod._orbit_smooth_fwd = nil
-	mod._orbit_angle = 0
-	mod._orbit_height = 0
-	mod._orbit_pitch = 0
-	mod._orbit_side_offset = 0
+	mod:set("orbit_paused", true)
 
 	_update_rig_perspective(false)
 	mod._reset_mouse_smoothing()
