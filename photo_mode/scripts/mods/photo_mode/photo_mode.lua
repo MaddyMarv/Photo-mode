@@ -39,10 +39,10 @@ mod:add_require_path("photo_mode/scripts/mods/photo_mode/hud/hud_element_photo_m
 
 mod._time_frozen = false
 mod._slomo_active = false
-mod._hud_hidden = false
-mod._chat_hidden = false
-mod._arms_hidden = false
-mod._screen_effects_hidden = false
+mod._hud_hidden = mod:get("hide_hud") or false
+mod._chat_hidden = mod:get("hide_chat") or false
+mod._arms_hidden = mod:get("hide_arms") or false
+mod._screen_effects_hidden = mod:get("hide_screen_effects") or false
 mod._step_frames_remaining = nil
 
 mod._placed_lights = {}
@@ -697,7 +697,6 @@ end
 local function _cleanup_all()
 	mod.close_photo_menu()
 	_reset_time_state()
-	_reset_hud_state()
 	_reset_camera_state()
 	_destroy_lantern()
 	if mod._blackout_active then
@@ -734,10 +733,6 @@ local function _cleanup_all()
 
 	mod:set("freeze_time", false)
 	mod:set("slomo_active", false)
-	mod:set("hide_hud", false)
-	mod:set("hide_chat", false)
-	mod:set("hide_arms", false)
-	mod:set("hide_screen_effects", false)
 	mod:set("dof_active", false)
 	mod:set("lantern_active", false)
 	mod:set("tripod_active", false)
@@ -759,7 +754,7 @@ mod.reset_tab_camera = function(silent)
 	mod._fov_offset = 0
 	mod:set("camera_fov_offset", 0)
 	mod._lock_fov = false
-	mod:set("lock_fov", false, true)
+	mod:set("lock_fov", false)
 
 	local world = _get_level_world()
 	if world then
@@ -779,24 +774,24 @@ mod.reset_tab_camera = function(silent)
 		mod.set_dof_active(false)
 	end
 	mod._dof_distance = 3.0
-	mod:set("dof_focal_distance", 3.0, true)
-	mod:set("dof_focal_region", 4.0, true)
-	mod:set("dof_blur_amount", 1.0, true)
+	mod:set("dof_focal_distance", 3.0)
+	mod:set("dof_focal_region", 4.0)
+	mod:set("dof_blur_amount", 1.0)
 
 	if mod._mouse_smoothing then
 		mod.set_mouse_smoothing(false)
 	end
 	mod._mouse_smoothing_amount = 0.65
-	mod:set("mouse_smoothing_amount", 0.65, true)
+	mod:set("mouse_smoothing_amount", 0.65)
 	mod._mouse_smoothing_speed = 1.0
-	mod:set("mouse_smoothing_speed", 1.0, true)
+	mod:set("mouse_smoothing_speed", 1.0)
 	mod._reset_mouse_smoothing()
 
 	if not was_silent then
 		mod._silent_reset = nil
 	end
 
-	if not silent then
+	if not silent and not was_silent then
 		mod:echo(mod:localize("msg_reset_tab_camera"))
 	end
 end
@@ -814,7 +809,7 @@ mod.reset_tab_time_hud = function(silent)
 	if mod._slomo_active then
 		mod.set_slomo_active(false)
 	end
-	mod:set("slomo_scale", 0.10, true)
+	mod:set("slomo_scale", 0.10)
 
 	if mod._hud_hidden then
 		mod.set_hide_hud(false)
@@ -830,14 +825,14 @@ mod.reset_tab_time_hud = function(silent)
 	end
 	if mod._hide_outlines then
 		mod._hide_outlines = false
-		mod:set("hide_outlines", false, true)
+		mod:set("hide_outlines", false)
 	end
 
 	if not was_silent then
 		mod._silent_reset = nil
 	end
 
-	if not silent then
+	if not silent and not was_silent then
 		mod:echo(mod:localize("msg_reset_tab_time_hud"))
 	end
 end
@@ -847,12 +842,13 @@ mod.reset_tab_lighting = function(silent)
 		return
 	end
 
+	local was_silent = mod._silent_reset
+	mod._silent_reset = true
+
 	mod._silent_clear = true
 	mod.clear_lights()
 	mod._silent_clear = nil
 
-	local was_silent = mod._silent_reset
-	mod._silent_reset = true
 	if mod._lantern_active then
 		mod.set_lantern_active(false)
 	end
@@ -861,15 +857,15 @@ mod.reset_tab_lighting = function(silent)
 		mod._blackout_active = false
 	end
 
-	mod:set("map_lights", true, true)
-	mod:set("blackout_active", false, true)
-	mod:set("exposure_compensation", 0, true)
-	mod:set("light_type", "spot", true)
-	mod:set("cast_shadows", true, true)
-	mod:set("light_intensity", 100, true)
-	mod:set("light_radius", 20, true)
-	mod:set("spot_angle", 45, true)
-	mod:set("light_color", { 255, 255, 245, 220 }, true)
+	mod:set("map_lights", true)
+	mod:set("blackout_active", false)
+	mod:set("exposure_compensation", 0)
+	mod:set("light_type", "spot")
+	mod:set("cast_shadows", true)
+	mod:set("light_intensity", 100)
+	mod:set("light_radius", 20)
+	mod:set("spot_angle", 45)
+	mod:set("light_color", { 255, 255, 245, 220 })
 
 	if mod.update_all_lights then
 		mod.update_all_lights()
@@ -879,7 +875,7 @@ mod.reset_tab_lighting = function(silent)
 		mod._silent_reset = nil
 	end
 
-	if not silent then
+	if not silent and not was_silent then
 		mod:echo(mod:localize("msg_reset_tab_lighting"))
 	end
 end
@@ -899,33 +895,33 @@ mod.reset_tab_rigs = function(silent)
 	end
 	table.clear(mod._dolly_points)
 	mod._selected_dolly_index = nil
-	mod:set("dolly_duration", 8.0, true)
-	mod:set("dolly_motion", "smooth", true)
-	mod:set("dolly_time_inbetween", 2.0, true)
+	mod:set("dolly_duration", 8.0)
+	mod:set("dolly_motion", "smooth")
+	mod:set("dolly_time_inbetween", 2.0)
 
 	if mod._orbit_active then
 		mod.set_orbit_active(false)
 	end
 	mod._orbit_paused = true
-	mod:set("orbit_paused", true, true)
+	mod:set("orbit_paused", true)
 
-	mod:set("orbit_target_mode", "follow", true)
-	mod:set("orbit_follow_rotation", true, true)
-	mod:set("orbit_facing", "inward", true)
-	mod:set("orbit_direction", "cw", true)
-	mod:set("orbit_speed", 15, true)
-	mod:set("orbit_radius", 4.0, true)
-	mod:set("orbit_height", 0.3, true)
-	mod:set("orbit_side_offset", 0.0, true)
-	mod:set("orbit_angle", 0, true)
-	mod:set("orbit_pitch", 0, true)
+	mod:set("orbit_target_mode", "follow")
+	mod:set("orbit_follow_rotation", true)
+	mod:set("orbit_facing", "inward")
+	mod:set("orbit_direction", "cw")
+	mod:set("orbit_speed", 15)
+	mod:set("orbit_radius", 4.0)
+	mod:set("orbit_height", 0.3)
+	mod:set("orbit_side_offset", 0.0)
+	mod:set("orbit_angle", 0)
+	mod:set("orbit_pitch", 0)
 	mod._orbit_pitch = 0
 
 	if not was_silent then
 		mod._silent_reset = nil
 	end
 
-	if not silent then
+	if not silent and not was_silent then
 		mod:echo(mod:localize("msg_reset_tab_rigs"))
 	end
 end
@@ -1001,7 +997,9 @@ mod.set_in_game_actions = function(allowed)
 
 	mod._actions_allowed = allowed
 	mod:set("allow_in_game_actions", allowed)
-	mod:echo(mod:localize(mod._actions_allowed and "msg_actions_allowed" or "msg_actions_blocked"))
+	if not mod._silent_reset then
+		mod:echo(mod:localize(mod._actions_allowed and "msg_actions_allowed" or "msg_actions_blocked"))
+	end
 end
 
 mod.toggle_in_game_actions = function()
@@ -1036,7 +1034,9 @@ mod.set_freeze_time = function(enabled)
 		end
 	end
 
-	mod:echo(mod:localize(enabled and "msg_time_frozen" or "msg_time_resumed"))
+	if not mod._silent_reset then
+		mod:echo(mod:localize(enabled and "msg_time_frozen" or "msg_time_resumed"))
+	end
 end
 
 mod.toggle_freeze_time = function()
@@ -1096,7 +1096,9 @@ mod.set_slomo_active = function(enabled)
 		end
 	end
 
-	mod:echo(mod:localize(mod._slomo_active and "msg_slomo_on" or "msg_slomo_off"))
+	if not mod._silent_reset then
+		mod:echo(mod:localize(mod._slomo_active and "msg_slomo_on" or "msg_slomo_off"))
+	end
 end
 
 mod.toggle_slomo = function()
@@ -1168,7 +1170,9 @@ mod.set_hide_hud = function(enabled)
 		end
 	end
 
-	mod:echo(mod:localize(mod._hud_hidden and "msg_hud_hidden" or "msg_hud_shown"))
+	if not mod._silent_reset then
+		mod:echo(mod:localize(mod._hud_hidden and "msg_hud_hidden" or "msg_hud_shown"))
+	end
 end
 
 mod.toggle_hide_hud = function()
@@ -1182,7 +1186,9 @@ mod.set_hide_chat = function(enabled)
 
 	mod._chat_hidden = enabled
 	mod:set("hide_chat", enabled)
-	mod:echo(mod:localize(mod._chat_hidden and "msg_chat_hidden" or "msg_chat_shown"))
+	if not mod._silent_reset then
+		mod:echo(mod:localize(mod._chat_hidden and "msg_chat_hidden" or "msg_chat_shown"))
+	end
 end
 
 mod.toggle_hide_chat = function()
@@ -1202,12 +1208,20 @@ mod.set_hide_arms = function(enabled)
 		mod._arms_hidden = enabled
 		mod:set("hide_arms", enabled)
 
-		if mod._arms_hidden then
-			player_visibility:hide()
-			mod:echo(mod:localize("msg_arms_hidden"))
+		if not mod._silent_reset then
+			if mod._arms_hidden then
+				player_visibility:hide()
+				mod:echo(mod:localize("msg_arms_hidden"))
+			else
+				player_visibility:show()
+				mod:echo(mod:localize("msg_arms_shown"))
+			end
 		else
-			player_visibility:show()
-			mod:echo(mod:localize("msg_arms_shown"))
+			if mod._arms_hidden then
+				player_visibility:hide()
+			else
+				player_visibility:show()
+			end
 		end
 	end
 end
@@ -1390,14 +1404,18 @@ mod.set_tripod_active = function(enabled)
 		mod._tripod_active = true
 		mod:set("tripod_active", true)
 		_update_rig_perspective()
-		mod:echo(mod:localize("msg_tripod_on"))
+		if not mod._silent_reset then
+			mod:echo(mod:localize("msg_tripod_on"))
+		end
 	else
 		mod._tripod_active = false
 		mod._tripod_pos = nil
 		mod._tripod_rot = nil
 		mod:set("tripod_active", false)
 		_update_rig_perspective()
-		mod:echo(mod:localize("msg_tripod_off"))
+		if not mod._silent_reset then
+			mod:echo(mod:localize("msg_tripod_off"))
+		end
 	end
 end
 
@@ -1737,7 +1755,9 @@ mod.set_dolly_active = function(enabled)
 		mod._dolly_active = true
 		mod:set("dolly_active", true)
 		_update_rig_perspective()
-		mod:echo(mod:localize("msg_dolly_started"))
+		if not mod._silent_reset then
+			mod:echo(mod:localize("msg_dolly_started"))
+		end
 	else
 		mod._dolly_active = false
 		mod._dolly_pos = nil
@@ -1745,7 +1765,9 @@ mod.set_dolly_active = function(enabled)
 		mod._fov_offset = mod:get("camera_fov_offset") or 0
 		mod:set("dolly_active", false)
 		_update_rig_perspective()
-		mod:echo(mod:localize("msg_dolly_stopped"))
+		if not mod._silent_reset then
+			mod:echo(mod:localize("msg_dolly_stopped"))
+		end
 	end
 end
 
@@ -1921,7 +1943,9 @@ mod.set_orbit_active = function(enabled)
 		mod:set("orbit_active", true)
 		mod:set("orbit_paused", true)
 		_update_rig_perspective()
-		mod:echo(mod:localize("msg_orbit_started"))
+		if not mod._silent_reset then
+			mod:echo(mod:localize("msg_orbit_started"))
+		end
 	else
 		mod._orbit_active = false
 		mod._orbit_paused = true
@@ -1932,7 +1956,9 @@ mod.set_orbit_active = function(enabled)
 		mod:set("orbit_active", false)
 		mod:set("orbit_paused", true)
 		_update_rig_perspective()
-		mod:echo(mod:localize("msg_orbit_stopped"))
+		if not mod._silent_reset then
+			mod:echo(mod:localize("msg_orbit_stopped"))
+		end
 	end
 end
 
@@ -1984,14 +2010,18 @@ mod.set_dof_active = function(enabled)
 		end
 
 		local dist = mod._dof_distance or mod:get("dof_focal_distance") or 3.0
-		mod:echo(mod:localize("msg_dof_on") .. " (Focus: " .. string.format("%.1fm", dist) .. ")")
+		if not mod._silent_reset then
+			mod:echo(mod:localize("msg_dof_on") .. " (Focus: " .. string.format("%.1fm", dist) .. ")")
+		end
 	else
 		if mod._original_render_dof == "false" and Application.set_render_setting then
 			Application.set_render_setting("dof_enabled", "false")
 			mod._original_render_dof = nil
 		end
 
-		mod:echo(mod:localize("msg_dof_off"))
+		if not mod._silent_reset then
+			mod:echo(mod:localize("msg_dof_off"))
+		end
 	end
 end
 
@@ -2229,9 +2259,13 @@ mod.set_lantern_active = function(enabled)
 
 	if not mod._lantern_active then
 		_destroy_lantern()
-		mod:echo(mod:localize("msg_lantern_off"))
+		if not mod._silent_reset then
+			mod:echo(mod:localize("msg_lantern_off"))
+		end
 	else
-		mod:echo(mod:localize("msg_lantern_on"))
+		if not mod._silent_reset then
+			mod:echo(mod:localize("msg_lantern_on"))
+		end
 	end
 end
 
