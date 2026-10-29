@@ -21,6 +21,11 @@ return {
 						function_name = "toggle_photo_menu",
 					},
 					{
+						setting_id = "show_chat_messages",
+						type = "checkbox",
+						default_value = true,
+					},
+					{
 						setting_id = "lock_camera_in_menu",
 						type = "checkbox",
 						default_value = true,

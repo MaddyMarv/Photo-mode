@@ -17,6 +17,12 @@ return {
 	toggle_photo_menu_description = {
 		en = "Hotkey to toggle the menu.",
 	},
+	show_chat_messages = {
+		en = "Chat Notifications",
+	},
+	show_chat_messages_description = {
+		en = "Show status and action reports in the chat window.",
+	},
 	lock_camera_in_menu = {
 		en = "Lock Camera in Menu",
 	},
@@ -759,10 +765,10 @@ return {
 		en = "Orbit: Set a center point first",
 	},
 	msg_orbit_started = {
-		en = "Orbit: Started",
+		en = "Orbit Camera: On",
 	},
 	msg_orbit_stopped = {
-		en = "Orbit: Stopped",
+		en = "Orbit Camera: Off",
 	},
 	msg_orbit_paused = {
 		en = "Orbit: Paused",

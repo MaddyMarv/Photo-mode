@@ -1,5 +1,15 @@
 local mod = get_mod("photo_mode")
 
+local _orig_echo = mod.echo
+mod.echo = function(self, ...)
+	if mod:get("show_chat_messages") == false then
+		return
+	end
+	if _orig_echo then
+		return _orig_echo(self, ...)
+	end
+end
+
 local ScriptCamera = require("scripts/foundation/utilities/script_camera")
 local ScriptViewport = require("scripts/foundation/utilities/script_viewport")
 local ScriptWorld = require("scripts/foundation/utilities/script_world")
@@ -753,6 +763,7 @@ mod.reset_tab_camera = function(silent)
 		return
 	end
 
+	local was_silent = mod._silent_reset
 	mod._silent_reset = true
 	mod._fov_offset = 0
 	mod:set("camera_fov_offset", 0)
@@ -789,7 +800,10 @@ mod.reset_tab_camera = function(silent)
 	mod._mouse_smoothing_speed = 1.0
 	mod:set("mouse_smoothing_speed", 1.0, true)
 	mod._reset_mouse_smoothing()
-	mod._silent_reset = nil
+
+	if not was_silent then
+		mod._silent_reset = nil
+	end
 
 	if not silent then
 		mod:echo(mod:localize("msg_reset_tab_camera"))
@@ -801,6 +815,7 @@ mod.reset_tab_time_hud = function(silent)
 		return
 	end
 
+	local was_silent = mod._silent_reset
 	mod._silent_reset = true
 	if mod._time_frozen then
 		mod.set_freeze_time(false)
@@ -826,7 +841,10 @@ mod.reset_tab_time_hud = function(silent)
 		mod._hide_outlines = false
 		mod:set("hide_outlines", false, true)
 	end
-	mod._silent_reset = nil
+
+	if not was_silent then
+		mod._silent_reset = nil
+	end
 
 	if not silent then
 		mod:echo(mod:localize("msg_reset_tab_time_hud"))
@@ -842,6 +860,7 @@ mod.reset_tab_lighting = function(silent)
 	mod.clear_lights()
 	mod._silent_clear = nil
 
+	local was_silent = mod._silent_reset
 	mod._silent_reset = true
 	if mod._lantern_active then
 		mod.set_lantern_active(false)
@@ -850,7 +869,6 @@ mod.reset_tab_lighting = function(silent)
 		mod.restore_all_extinguished_lights(true)
 		mod._blackout_active = false
 	end
-	mod._silent_reset = nil
 
 	mod:set("map_lights", true, true)
 	mod:set("blackout_active", false, true)
@@ -866,6 +884,10 @@ mod.reset_tab_lighting = function(silent)
 		mod.update_all_lights()
 	end
 
+	if not was_silent then
+		mod._silent_reset = nil
+	end
+
 	if not silent then
 		mod:echo(mod:localize("msg_reset_tab_lighting"))
 	end
@@ -876,6 +898,7 @@ mod.reset_tab_rigs = function(silent)
 		return
 	end
 
+	local was_silent = mod._silent_reset
 	mod._silent_reset = true
 	if mod._tripod_active then
 		mod.set_tripod_active(false)
@@ -894,7 +917,6 @@ mod.reset_tab_rigs = function(silent)
 	end
 	mod._orbit_paused = true
 	mod:set("orbit_paused", true, true)
-	mod._silent_reset = nil
 
 	mod:set("orbit_target_mode", "follow", true)
 	mod:set("orbit_follow_rotation", true, true)
@@ -907,6 +929,10 @@ mod.reset_tab_rigs = function(silent)
 	mod:set("orbit_angle", 0, true)
 	mod:set("orbit_pitch", 0, true)
 	mod._orbit_pitch = 0
+
+	if not was_silent then
+		mod._silent_reset = nil
+	end
 
 	if not silent then
 		mod:echo(mod:localize("msg_reset_tab_rigs"))
@@ -930,10 +956,12 @@ mod.reset_all_settings = function()
 		return
 	end
 
+	mod._silent_reset = true
 	mod.reset_tab_camera(true)
 	mod.reset_tab_time_hud(true)
 	mod.reset_tab_lighting(true)
 	mod.reset_tab_rigs(true)
+	mod._silent_reset = nil
 
 	mod:echo(mod:localize("msg_reset_all"))
 end
@@ -3197,14 +3225,20 @@ mod.on_setting_changed = function(setting_id)
 	elseif setting_id == "camera_tilt" then
 		mod._tilt_angle = mod:get("camera_tilt") or 0
 	elseif setting_id == "lock_fov" then
-		mod._lock_fov = mod:get("lock_fov") == true
-		if not mod._silent_reset then
-			mod:echo(mod:localize(mod._lock_fov and "msg_fov_locked" or "msg_fov_unlocked"))
+		local val = mod:get("lock_fov") == true
+		if val ~= mod._lock_fov then
+			mod._lock_fov = val
+			if not mod._silent_reset then
+				mod:echo(mod:localize(mod._lock_fov and "msg_fov_locked" or "msg_fov_unlocked"))
+			end
 		end
 	elseif setting_id == "hide_outlines" then
-		mod._hide_outlines = mod:get("hide_outlines") == true
-		if not mod._silent_reset then
-			mod:echo(mod:localize(mod._hide_outlines and "msg_outlines_hidden" or "msg_outlines_shown"))
+		local val = mod:get("hide_outlines") == true
+		if val ~= mod._hide_outlines then
+			mod._hide_outlines = val
+			if not mod._silent_reset then
+				mod:echo(mod:localize(mod._hide_outlines and "msg_outlines_hidden" or "msg_outlines_shown"))
+			end
 		end
 	elseif setting_id == "orbit_pitch" then
 		mod._orbit_pitch = mod:get("orbit_pitch") or 0

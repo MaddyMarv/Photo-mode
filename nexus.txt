@@ -16,6 +16,7 @@ To do:
 [spoiler]
 [b]Photo Mode In-Game Menu[/b]
 - Photo Mode Menu (Hotkey)
+- Chat Notifications
 - Lock Camera in Menu
 - Allow In-Game Actions
 - Toggle In-Game Actions (Hotkey)

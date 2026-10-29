@@ -407,9 +407,15 @@ local function _build_time_hud_tab(ctx, cx_start, cy_start, w)
 	y = y + 40
 
 	local outlines_hidden = mod._hide_outlines
-	_button(ctx, "toggle_hide_outlines", outlines_hidden and "OUTLINES: HIDDEN" or "HIDE OUTLINES", cx_start, y, w,
+	_button(ctx, "toggle_hide_outlines", outlines_hidden and "OUTLINES: HIDDEN" or "HIDE OUTLINES", cx_start, y, half_w,
 		32, outlines_hidden, function()
 		mod.toggle_hide_outlines()
+	end)
+
+	local show_chat = mod:get("show_chat_messages") ~= false
+	_button(ctx, "toggle_chat_messages", show_chat and "CHAT LOGS: ON" or "CHAT LOGS: OFF", cx_start + half_w + 10, y,
+		half_w, 32, show_chat, function()
+		mod:set("show_chat_messages", not show_chat, true)
 	end)
 end
 
