@@ -4,6 +4,7 @@ local ScriptCamera = require("scripts/foundation/utilities/script_camera")
 local ScriptViewport = require("scripts/foundation/utilities/script_viewport")
 local ScriptWorld = require("scripts/foundation/utilities/script_world")
 local MoodSettings = require("scripts/settings/camera/mood/mood_settings")
+local LightControllerUtilities = require("core/scripts/common/light_controller_utilities")
 
 if Managers.input and Managers.input._cursor_stack_data then
 	local cdata = Managers.input._cursor_stack_data
@@ -38,6 +39,9 @@ mod._placed_lights = {}
 mod._selected_light_index = nil
 mod._lantern_active = false
 mod._lantern_unit = nil
+mod._blackout_active = false
+mod._extinguished_units = {}
+mod._exposure_was_applied = false
 
 mod._fov_offset = mod:get("camera_fov_offset") or 0
 mod._tilt_angle = mod:get("camera_tilt") or 0
@@ -447,10 +451,13 @@ local function _apply_light_settings(light_obj, settings)
 
 	Light.set_enabled(light_obj, true)
 	Light.set_color_filter(light_obj, Vector3(r, g, b))
-	Light.set_falloff_start(light_obj, 0.5)
+	local falloff_start = math.min(0.05, radius * 0.1)
+	Light.set_falloff_start(light_obj, falloff_start)
 	Light.set_falloff_end(light_obj, radius)
 	Light.set_volumetric_intensity(light_obj, 0.3)
-	Light.set_intensity(light_obj, intensity)
+	local exp_offset = math.clamp(mod:get("exposure_compensation") or 0.0, -11.0, 3.0)
+	local effective_intensity = intensity * math.pow(2, -exp_offset)
+	Light.set_intensity(light_obj, effective_intensity)
 	Light.set_casts_shadows(light_obj, cast_shadows)
 
 	if light_type == "spot" then
@@ -461,6 +468,7 @@ local function _apply_light_settings(light_obj, settings)
 		Light.set_type(light_obj, "omni")
 	end
 end
+
 
 local function _sync_settings_from_light(s)
 	if not s then
@@ -537,13 +545,14 @@ mod.update_all_lights = function()
 
 	local count = #mod._placed_lights
 	if count > 0 then
-		local target_idx = math.clamp(mod._selected_light_index or count, 1, count)
-		mod._selected_light_index = target_idx
-
-		local light_data = mod._placed_lights[target_idx]
-		if light_data and light_data.unit and Unit.alive(light_data.unit) and light_data.light_obj then
-			light_data.settings = _get_current_light_settings()
-			_apply_light_settings(light_data.light_obj, light_data.settings)
+		for i = 1, count do
+			local light_data = mod._placed_lights[i]
+			if light_data and light_data.unit and Unit.alive(light_data.unit) and light_data.light_obj then
+				if i == mod._selected_light_index then
+					light_data.settings = _get_current_light_settings()
+				end
+				_apply_light_settings(light_data.light_obj, light_data.settings)
+			end
 		end
 	end
 end
@@ -679,6 +688,12 @@ local function _cleanup_all()
 	_reset_hud_state()
 	_reset_camera_state()
 	_destroy_lantern()
+	if mod._blackout_active then
+		mod.restore_all_extinguished_lights(true)
+		mod._blackout_active = false
+	end
+	mod:set("blackout_active", false, true)
+	mod:set("exposure_compensation", 0, true)
 	mod._silent_clear = true
 	mod.clear_lights()
 	mod._silent_clear = nil
@@ -814,8 +829,14 @@ mod.reset_tab_lighting = function(silent)
 	if mod._lantern_active then
 		mod.set_lantern_active(false)
 	end
+	if mod._blackout_active then
+		mod.restore_all_extinguished_lights(true)
+		mod._blackout_active = false
+	end
 	mod._silent_reset = nil
 
+	mod:set("blackout_active", false, true)
+	mod:set("exposure_compensation", 0, true)
 	mod:set("light_type", "spot", true)
 	mod:set("cast_shadows", true, true)
 	mod:set("light_intensity", 100, true)
@@ -1908,6 +1929,7 @@ mod.inc_dof_distance = function()
 	local new_dist = math.min(50.0, math.floor((current + 0.5) * 10 + 0.5) / 10)
 
 	mod._dof_distance = new_dist
+	mod:set("dof_focal_distance", new_dist, true)
 	mod:echo(mod:localize("msg_dof_distance") .. ": " .. string.format("%.1fm", new_dist))
 end
 
@@ -1925,6 +1947,7 @@ mod.dec_dof_distance = function()
 	local new_dist = math.max(0.5, math.floor((current - 0.5) * 10 + 0.5) / 10)
 
 	mod._dof_distance = new_dist
+	mod:set("dof_focal_distance", new_dist, true)
 	mod:echo(mod:localize("msg_dof_distance") .. ": " .. string.format("%.1fm", new_dist))
 end
 
@@ -2005,6 +2028,57 @@ mod.undo_light = function()
 		end
 
 		mod:echo(mod:localize("msg_light_undone") .. " (" .. tostring(remaining) .. " left)")
+	end
+end
+
+mod.extinguish_map_lights = function()
+	local world = _get_level_world()
+	if not world then
+		return
+	end
+
+	local units = World.units(world)
+	local count = 0
+
+	for i = 1, #units do
+		local u = units[i]
+		if Unit.alive(u) and not Unit.get_data(u, "photo_mode_light") and not mod._extinguished_units[u] then
+			local num_lights = Unit.num_lights(u)
+			local has_lc = ScriptUnit.has_extension(u, "light_controller_system")
+			if num_lights > 0 or has_lc then
+				local ok, _ = pcall(LightControllerUtilities.set_enabled, u, false)
+				if ok then
+					mod._extinguished_units[u] = true
+					count = count + 1
+				end
+			end
+		end
+	end
+
+	mod:echo(mod:localize("msg_blackout_on"))
+end
+
+mod.restore_all_extinguished_lights = function(silent)
+	for u, _ in pairs(mod._extinguished_units) do
+		if Unit.alive(u) then
+			pcall(LightControllerUtilities.set_enabled, u, true)
+		end
+	end
+	table.clear(mod._extinguished_units)
+	if not silent then
+		mod:echo(mod:localize("msg_blackout_off"))
+	end
+end
+
+mod.toggle_blackout_zone = function()
+	if mod._blackout_active then
+		mod._blackout_active = false
+		mod:set("blackout_active", false, true)
+		mod.restore_all_extinguished_lights()
+	else
+		mod._blackout_active = true
+		mod:set("blackout_active", true, true)
+		mod.extinguish_map_lights()
 	end
 end
 
@@ -2709,6 +2783,19 @@ mod:hook_safe("CameraManager", "shading_callback",
 			return
 		end
 
+		local exposure_offset = math.clamp(mod:get("exposure_compensation") or 0.0, -11.0, 3.0)
+		local need_apply = false
+
+		if exposure_offset and exposure_offset ~= 0.0 then
+			local cur_exp = ShadingEnvironment.scalar(shading_env, "exposure_compensation") or 0
+			ShadingEnvironment.set_scalar(shading_env, "exposure_compensation", cur_exp + exposure_offset)
+			mod._exposure_was_applied = true
+			need_apply = true
+		elseif mod._exposure_was_applied then
+			mod._exposure_was_applied = false
+			need_apply = true
+		end
+
 		if mod._dof_active then
 			local focal_distance = mod._dof_distance or mod:get("dof_focal_distance") or 3.0
 			local focal_region = mod:get("dof_focal_region") or 4.0
@@ -2721,12 +2808,16 @@ mod:hook_safe("CameraManager", "shading_callback",
 			ShadingEnvironment.set_scalar(shading_env, "dof_focal_region_end", 2)
 			ShadingEnvironment.set_scalar(shading_env, "dof_focal_near_scale", blur_amount)
 			ShadingEnvironment.set_scalar(shading_env, "dof_focal_far_scale", blur_amount)
-			ShadingEnvironment.apply(shading_env)
+			need_apply = true
 			mod._dof_was_applied = true
 		elseif mod._dof_was_applied then
 			ShadingEnvironment.set_scalar(shading_env, "dof_enabled", 0)
-			ShadingEnvironment.apply(shading_env)
+			need_apply = true
 			mod._dof_was_applied = false
+		end
+
+		if need_apply then
+			ShadingEnvironment.apply(shading_env)
 		end
 	end)
 
@@ -2952,6 +3043,18 @@ mod.on_setting_changed = function(setting_id)
 		_sync_replay_clock_scale()
 	elseif setting_id == "camera_fov_offset" then
 		mod._fov_offset = mod:get("camera_fov_offset") or 0
+		local world = _get_level_world()
+		if world then
+			local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+			if ff_viewport then
+				local cam = ScriptViewport.camera(ff_viewport)
+				if cam then
+					local default_fov_rad = math.rad(65)
+					local current_fov = math.clamp(default_fov_rad + math.rad(mod._fov_offset), math.rad(5), math.rad(125))
+					Camera.set_vertical_fov(cam, current_fov)
+				end
+			end
+		end
 	elseif setting_id == "camera_tilt" then
 		mod._tilt_angle = mod:get("camera_tilt") or 0
 	elseif setting_id == "dof_focal_distance" then
@@ -2969,13 +3072,23 @@ mod.on_setting_changed = function(setting_id)
 		mod._mouse_smoothing_amount = mod:get("mouse_smoothing_amount") or 0.65
 	elseif setting_id == "mouse_smoothing_speed" then
 		mod._mouse_smoothing_speed = mod:get("mouse_smoothing_speed") or 1.0
+	elseif setting_id == "blackout_active" then
+		local val = mod:get("blackout_active") == true
+		if val ~= mod._blackout_active then
+			mod.toggle_blackout_zone()
+		end
 	end
 
 	if setting_id == "light_intensity" or setting_id == "light_radius"
 		or setting_id == "spot_angle" or setting_id == "light_color"
-		or setting_id == "light_type" or setting_id == "cast_shadows" then
+		or setting_id == "light_type" or setting_id == "cast_shadows"
+		or setting_id == "exposure_compensation" then
 		mod.update_all_lights()
 	end
+end
+
+mod.on_settings_reset = function()
+	mod.reset_all_settings()
 end
 
 mod.on_game_state_changed = function(status, state_name)

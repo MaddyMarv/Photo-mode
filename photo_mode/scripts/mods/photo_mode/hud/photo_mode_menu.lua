@@ -12,7 +12,7 @@ M.TAB_HEIGHTS = {
 	time_hud = 380,
 	camera = 550,
 	rigs = 560,
-	lighting = 580,
+	lighting = 660,
 }
 M.LAYER = 950
 M.FONT_TYPE = "proxima_nova_bold"
@@ -458,6 +458,7 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	end)
 	y = y + 34
 
+	local half_btn_w = math.floor((w - 10) / 2)
 	local lantern_active = mod._lantern_active
 	_button(ctx, "toggle_lantern", lantern_active and "Lantern: ON" or "Lantern: OFF", cx_start, y, third_w, 32,
 		lantern_active, function()
@@ -482,7 +483,35 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 			mod.update_all_lights()
 		end
 	end)
-	y = y + 44
+	y = y + 42
+
+	_section_header(ctx.items, "MAP LIGHTS & EXPOSURE", cx_start, y, w)
+	y = y + 24
+
+	local map_lights_on = not mod._blackout_active
+	_button(ctx, "toggle_blackout", map_lights_on and "Map Lights: ON" or "Map Lights: OFF", cx_start, y,
+		w, 30, map_lights_on, function()
+		mod.toggle_blackout_zone()
+	end)
+	y = y + 36
+
+	local exp_val = mod:get("exposure_compensation") or 0.0
+	local exp_str = string.format("%+.1f EV", exp_val)
+	local reset_w = 64
+	_slider(ctx, "exposure_compensation", "Scene Exposure", exp_str, cx_start, y,
+		w - reset_w - 10, 28, -11.0, 3.0, exp_val, 0.5, 1, function(v)
+		mod:set("exposure_compensation", v, true)
+		if mod.update_all_lights then
+			mod.update_all_lights()
+		end
+	end)
+	_button(ctx, "reset_exposure", "Reset", cx_start + w - reset_w, y + 14, reset_w, 20, false, function()
+		mod:set("exposure_compensation", 0.0, true)
+		if mod.update_all_lights then
+			mod.update_all_lights()
+		end
+	end)
+	y = y + 40
 
 	local header_title = num_lights > 0 and string.format("LIGHT PROPERTIES (LIGHT #%d)", sel_idx) or
 	"LIGHT PROPERTIES (NEXT LIGHT / LANTERN)"
@@ -500,8 +529,9 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	y = y + 32
 
 	local radius = mod:get("light_radius") or 20
-	_slider(ctx, "light_radius", "Light Radius / Falloff", string.format("%d m", math.floor(radius + 0.5)), cx_start, y,
-		w, 28, 5, 100, radius, 1, 0, function(v)
+	local radius_fmt = radius < 2 and string.format("%.1f m", radius) or string.format("%d m", math.floor(radius + 0.5))
+	_slider(ctx, "light_radius", "Light Radius / Falloff", radius_fmt, cx_start, y,
+		w, 28, 0.5, 100, radius, 0.5, 1, function(v)
 		mod:set("light_radius", v, true)
 		if mod.update_all_lights then
 			mod.update_all_lights()

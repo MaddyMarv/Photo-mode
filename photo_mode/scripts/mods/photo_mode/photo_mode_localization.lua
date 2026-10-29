@@ -449,6 +449,30 @@ return {
 	cast_shadows_description = {
 		en = "If lights cast shadows.",
 	},
+	blackout_active = {
+		en = "Map Lights Disabled",
+	},
+	blackout_active_description = {
+		en = "Extinguish all level and map light fixtures.",
+	},
+	toggle_blackout = {
+		en = "Toggle Map Lights",
+	},
+	toggle_blackout_description = {
+		en = "Hotkey to turn map light fixtures on or off.",
+	},
+	exposure_compensation = {
+		en = "Scene Exposure",
+	},
+	exposure_compensation_description = {
+		en = "Adjust ambient scene brightness.",
+	},
+	msg_blackout_on = {
+		en = "Map Lights: Off",
+	},
+	msg_blackout_off = {
+		en = "Map Lights: On",
+	},
 	msg_light_placed = {
 		en = "Light Placed",
 	},
