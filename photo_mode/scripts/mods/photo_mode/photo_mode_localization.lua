@@ -665,6 +665,24 @@ return {
 	orbit_active_description = {
 		en = "Circles camera around a target.",
 	},
+	orbit_dynamic_give = {
+		en = "Dynamic Give",
+	},
+	orbit_dynamic_give_description = {
+		en = "Camera reacts to sliding and looking up or down.",
+	},
+	orbit_slide_give = {
+		en = "Slide Give",
+	},
+	orbit_slide_give_description = {
+		en = "How much camera dips when sliding or crouching.",
+	},
+	orbit_pitch_give = {
+		en = "Look Tilt Give",
+	},
+	orbit_pitch_give_description = {
+		en = "How much camera tilts when looking up or down.",
+	},
 	toggle_orbit = {
 		en = "Toggle Orbit Keybind",
 	},

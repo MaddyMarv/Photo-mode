@@ -123,6 +123,9 @@ To do:
 
 **Orbit Camera Rig**
 - Orbit Rig Toggle
+- Dynamic Give
+- Slide & Crouch Give
+- Look Tilt Give
 - Toggle Orbit (Hotkey)
 - Play/Pause Orbit (Hotkey)
 - Set Orbit Center (Hotkey)

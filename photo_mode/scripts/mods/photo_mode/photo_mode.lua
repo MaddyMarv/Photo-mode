@@ -78,17 +78,24 @@ mod._dolly_dists = nil
 mod._dolly_total_dist = 0
 mod._selected_dolly_index = nil
 
-mod._orbit_active = false
+local _target_mode_init = mod:get("orbit_target_mode") or "follow"
+local _is_char_init = (_target_mode_init == "follow" or _target_mode_init == "character")
+mod._orbit_active = (mod:get("orbit_active") == true and _is_char_init) or false
+if not _is_char_init and mod:get("orbit_active") then
+	mod:set("orbit_active", false)
+end
 mod._orbit_pos = nil
 mod._orbit_rot = nil
 mod._orbit_center = nil
 mod._orbit_smooth_center = nil
 mod._orbit_smooth_fwd = nil
+mod._orbit_smooth_height_drop = 0
+mod._orbit_smooth_pitch_give = 0
 mod._orbit_angle = math.rad(mod:get("orbit_angle") or 0)
 mod._orbit_height = mod:get("orbit_height") or 0.3
 mod._orbit_pitch = mod:get("orbit_pitch") or 0
 mod._orbit_side_offset = mod:get("orbit_side_offset") or 0.0
-mod._orbit_paused = false
+mod._orbit_paused = mod:get("orbit_paused") or false
 mod._hide_outlines = mod:get("hide_outlines") or false
 
 local HUD_VISIBILITY_GROUP = "photo_mode_hide_hud"
@@ -229,14 +236,15 @@ local function _update_rig_perspective(force_enable)
 	end
 
 	local perspectives = get_mod("Perspectives")
+	local unit = _get_own_character_unit()
 
 	if should_be_3p then
-		if _is_camera_rig_active() and not mod._rig_forced_3p then
+		local needs_attach = (not mod._rig_forced_3p) or (unit and mod._rig_forced_3p_unit ~= unit)
+		if _is_camera_rig_active() and needs_attach then
 			if perspectives and perspectives:is_enabled() and perspectives.autoswitch then
 				perspectives.autoswitch("photo_mode", true, true)
 			end
 
-			local unit = _get_own_character_unit()
 			if unit then
 				local fp_ext = ScriptUnit.has_extension(unit, "first_person_system")
 				if fp_ext then
@@ -253,9 +261,10 @@ local function _update_rig_perspective(force_enable)
 				if vl_ext and vl_ext.force_update_item_visibility then
 					vl_ext:force_update_item_visibility()
 				end
-			end
 
-			mod._rig_forced_3p = true
+				mod._rig_forced_3p_unit = unit
+				mod._rig_forced_3p = true
+			end
 		end
 	else
 		if mod._rig_forced_3p then
@@ -263,9 +272,9 @@ local function _update_rig_perspective(force_enable)
 				perspectives.clear_reason("photo_mode")
 			end
 
-			local unit = _get_own_character_unit()
-			if unit then
-				local fp_ext = ScriptUnit.has_extension(unit, "first_person_system")
+			local prev_unit = mod._rig_forced_3p_unit or unit
+			if prev_unit and Unit.alive(prev_unit) then
+				local fp_ext = ScriptUnit.has_extension(prev_unit, "first_person_system")
 				if fp_ext then
 					local restore_3p = false
 					if perspectives and perspectives:is_enabled() and perspectives.is_requesting_third_person then
@@ -286,13 +295,14 @@ local function _update_rig_perspective(force_enable)
 					end
 				end
 
-				local vl_ext = ScriptUnit.has_extension(unit, "visual_loadout_system")
+				local vl_ext = ScriptUnit.has_extension(prev_unit, "visual_loadout_system")
 				if vl_ext and vl_ext.force_update_item_visibility then
 					vl_ext:force_update_item_visibility()
 				end
 			end
 
 			mod._rig_forced_3p = nil
+			mod._rig_forced_3p_unit = nil
 			mod._rig_prev_force_3p = nil
 		end
 	end
@@ -684,7 +694,45 @@ local function _reset_hud_state()
 	end
 end
 
-local function _cleanup_all()
+local function _apply_outlines_visibility(visible)
+	local ext_mgr = Managers.state and Managers.state.extension
+	local outline_system = ext_mgr and ext_mgr:system("outline_system")
+	if outline_system then
+		outline_system._visible = visible
+		if not visible then
+			outline_system:_hide_all_outlines()
+		end
+	end
+
+	local pm = Managers.player
+	if pm then
+		for _, player in pairs(pm:players()) do
+			local unit = player.player_unit
+			if unit and Unit.alive(unit) then
+				local holo_ext = ScriptUnit.has_extension(unit, "hologram_system")
+				if holo_ext then
+					if not visible then
+						local holo_unit = holo_ext._hologram_unit
+						if holo_unit and holo_ext._world and Unit.alive(holo_unit) then
+							World.unlink_unit(holo_ext._world, holo_unit, true)
+							World.destroy_unit(holo_ext._world, holo_unit)
+						end
+						holo_ext._hologram_unit = nil
+					else
+						holo_ext._next_update_t = 0
+					end
+				end
+			end
+		end
+	end
+
+	local po = get_mod("PlayerOutlines")
+	if po and PlayerOutlines and not visible and PlayerOutlines.clear_all_outlines then
+		PlayerOutlines.clear_all_outlines()
+	end
+end
+
+local function _cleanup_all(keep_orbit)
 	mod.close_photo_menu()
 	_reset_time_state()
 	_destroy_lantern_unit()
@@ -714,23 +762,38 @@ local function _cleanup_all()
 	mod._selected_dolly_index = nil
 	table.clear(mod._dolly_points)
 
-	mod._orbit_active = false
-	mod._orbit_paused = true
+	local target_mode = mod:get("orbit_target_mode") or "follow"
+	local is_char = (target_mode == "follow" or target_mode == "character")
+	local can_persist_orbit = keep_orbit and mod._orbit_active and is_char
+
+	if not can_persist_orbit then
+		mod._orbit_active = false
+		mod._orbit_paused = true
+		mod._orbit_center = nil
+		if not is_char then
+			mod:set("orbit_active", false)
+		end
+		mod:set("orbit_paused", true)
+	end
+
 	mod._orbit_pos = nil
 	mod._orbit_rot = nil
-	mod._orbit_center = nil
 	mod._orbit_smooth_center = nil
 	mod._orbit_smooth_fwd = nil
+	mod._orbit_smooth_height_drop = 0
+	mod._orbit_smooth_pitch_give = 0
 
 	mod:set("freeze_time", false)
 	mod:set("slomo_active", false)
 	mod:set("tripod_active", false)
 	mod:set("dolly_active", false)
-	mod:set("orbit_active", false)
-	mod:set("orbit_paused", true)
 
-	_update_rig_perspective(false)
+	_update_rig_perspective(can_persist_orbit)
 	mod._reset_mouse_smoothing()
+
+	if mod._hide_outlines then
+		_apply_outlines_visibility(true)
+	end
 end
 
 mod.reset_tab_camera = function(silent)
@@ -815,6 +878,7 @@ mod.reset_tab_time_hud = function(silent)
 	if mod._hide_outlines then
 		mod._hide_outlines = false
 		mod:set("hide_outlines", false)
+		_apply_outlines_visibility(true)
 	end
 
 	if not was_silent then
@@ -892,6 +956,7 @@ mod.reset_tab_rigs = function(silent)
 		mod.set_orbit_active(false)
 	end
 	mod._orbit_paused = true
+	mod._orbit_center = nil
 	mod:set("orbit_paused", true)
 
 	mod:set("orbit_target_mode", "follow")
@@ -905,6 +970,9 @@ mod.reset_tab_rigs = function(silent)
 	mod:set("orbit_angle", 0)
 	mod:set("orbit_pitch", 0)
 	mod._orbit_pitch = 0
+	mod:set("orbit_dynamic_give", true)
+	mod:set("orbit_slide_give", 0.5)
+	mod:set("orbit_pitch_give", 0.35)
 
 	if not was_silent then
 		mod._silent_reset = nil
@@ -1942,6 +2010,8 @@ mod.set_orbit_active = function(enabled)
 		mod._orbit_rot = nil
 		mod._orbit_smooth_center = nil
 		mod._orbit_smooth_fwd = nil
+		mod._orbit_smooth_height_drop = 0
+		mod._orbit_smooth_pitch_give = 0
 		mod:set("orbit_active", false)
 		mod:set("orbit_paused", true)
 		_update_rig_perspective()
@@ -2436,6 +2506,36 @@ mod.update = function(dt)
 			local target_mode = mod:get("orbit_target_mode") or "follow"
 			local is_char = (target_mode == "character" or target_mode == "follow")
 			local follow_rot = (target_mode == "follow") or (target_mode == "character" and mod:get("orbit_follow_rotation") == true)
+			local unit = is_char and (_get_spectated_puppet_unit() or _get_own_character_unit())
+
+			if is_char and unit and (not mod._rig_forced_3p or mod._rig_forced_3p_unit ~= unit) then
+				_update_rig_perspective(true)
+			end
+
+			local dynamic_give = mod:get("orbit_dynamic_give") ~= false
+			if is_char and dynamic_give and unit and Unit.alive(unit) then
+				local fp_ext = ScriptUnit.has_extension(unit, "first_person_system")
+				local default_h = (fp_ext and fp_ext._heights and fp_ext._heights.default) or 1.7
+				local cur_h = (fp_ext and fp_ext.extrapolated_character_height and fp_ext:extrapolated_character_height()) or default_h
+				local raw_drop = math.max(0, default_h - cur_h)
+				local slide_give = mod:get("orbit_slide_give")
+				if slide_give == nil then slide_give = 0.5 end
+				local target_drop = raw_drop * slide_give
+				local drop_lerp = 1 - math.exp(-14.0 * dt)
+				mod._orbit_smooth_height_drop = (mod._orbit_smooth_height_drop or 0) + (target_drop - (mod._orbit_smooth_height_drop or 0)) * math.clamp(drop_lerp, 0, 1)
+
+				local fp_rot = _get_unit_heading_rotation(unit)
+				local look_pitch = fp_rot and Quaternion.pitch(fp_rot) or 0
+				local pitch_give = mod:get("orbit_pitch_give")
+				if pitch_give == nil then pitch_give = 0.35 end
+				local target_pitch_deg = math.deg(look_pitch) * pitch_give
+				local pitch_lerp = 1 - math.exp(-12.0 * dt)
+				mod._orbit_smooth_pitch_give = (mod._orbit_smooth_pitch_give or 0) + (target_pitch_deg - (mod._orbit_smooth_pitch_give or 0)) * math.clamp(pitch_lerp, 0, 1)
+			else
+				mod._orbit_smooth_height_drop = 0
+				mod._orbit_smooth_pitch_give = 0
+			end
+
 			if is_char then
 				if not mod._orbit_smooth_center then
 					mod._orbit_smooth_center = Vector3Box(center)
@@ -2469,7 +2569,6 @@ mod.update = function(dt)
 
 			local horiz_dir
 			if is_char and follow_rot then
-				local unit = _get_spectated_puppet_unit() or _get_own_character_unit()
 				if unit and Unit.alive(unit) then
 					local rot = _get_unit_heading_rotation(unit) or Unit.world_rotation(unit, 1)
 					local fwd = Vector3.flat(Quaternion.forward(rot))
@@ -2500,8 +2599,11 @@ mod.update = function(dt)
 				horiz_dir = Vector3(math.cos(angle), math.sin(angle), 0)
 			end
 
-			local new_pos = center + horiz_dir * radius + Vector3(0, 0, height)
-			local look_target = center + Vector3(0, 0, height)
+			local height_drop_offset = Vector3(0, 0, mod._orbit_smooth_height_drop or 0)
+			local effective_center = center - height_drop_offset
+
+			local new_pos = effective_center + horiz_dir * radius + Vector3(0, 0, height)
+			local look_target = effective_center + Vector3(0, 0, height)
 			local look_dir
 
 			if facing == "outward" then
@@ -2514,8 +2616,9 @@ mod.update = function(dt)
 			local new_rot = Quaternion.look(look_dir, up)
 
 			local orbit_pitch = mod._orbit_pitch or mod:get("orbit_pitch") or 0
-			if orbit_pitch ~= 0 then
-				local pitch_rot = Quaternion.axis_angle(Quaternion.right(new_rot), math.rad(orbit_pitch))
+			local total_pitch = orbit_pitch + (mod._orbit_smooth_pitch_give or 0)
+			if total_pitch ~= 0 then
+				local pitch_rot = Quaternion.axis_angle(Quaternion.right(new_rot), math.rad(total_pitch))
 				new_rot = Quaternion.multiply(pitch_rot, new_rot)
 			end
 
@@ -2904,12 +3007,47 @@ mod:hook("ConstantElementChat", "should_draw", function(func, self)
 	return func(self)
 end)
 
+mod:hook("OutlineSystem", "update", function(func, self, context, dt, t)
+	if mod:is_enabled() and mod._hide_outlines then
+		self._visible = false
+		self:_hide_all_outlines()
+		return
+	end
+
+	self._visible = true
+	return func(self, context, dt, t)
+end)
+
+mod:hook("OutlineSystem", "_show_outline", function(func, self, unit, extension)
+	if mod:is_enabled() and mod._hide_outlines then
+		return
+	end
+
+	return func(self, unit, extension)
+end)
+
 mod:hook("OutlineSystem", "_cinematic_active", function(func, self)
 	if mod:is_enabled() and mod._hide_outlines then
 		return true
 	end
 
 	return func(self)
+end)
+
+mod:hook("PlayerUnitHologramExtension", "update", function(func, self, unit, dt, t)
+	if mod:is_enabled() and mod._hide_outlines then
+		local hologram_unit = self._hologram_unit
+		if hologram_unit then
+			if self._world and Unit.alive(hologram_unit) then
+				World.unlink_unit(self._world, hologram_unit, true)
+				World.destroy_unit(self._world, hologram_unit)
+			end
+			self._hologram_unit = nil
+		end
+		return
+	end
+
+	return func(self, unit, dt, t)
 end)
 
 mod:hook("CameraManager", "_update_camera_properties",
@@ -3255,6 +3393,12 @@ mod.on_setting_changed = function(setting_id)
 			if not mod._silent_reset then
 				mod:echo(mod:localize(mod._hide_outlines and "msg_outlines_hidden" or "msg_outlines_shown"))
 			end
+			_apply_outlines_visibility(not val)
+		end
+	elseif setting_id == "orbit_dynamic_give" then
+		if mod:get("orbit_dynamic_give") == false then
+			mod._orbit_smooth_height_drop = 0
+			mod._orbit_smooth_pitch_give = 0
 		end
 	elseif setting_id == "orbit_pitch" then
 		mod._orbit_pitch = mod:get("orbit_pitch") or 0
@@ -3303,11 +3447,11 @@ mod.on_settings_reset = function()
 end
 
 mod.on_game_state_changed = function(status, state_name)
-	_cleanup_all()
+	_cleanup_all(true)
 end
 
 mod.on_disabled = function(initial_call)
-	_cleanup_all()
+	_cleanup_all(false)
 end
 
 local _replays_hooked = false
@@ -3527,12 +3671,37 @@ end
 
 mod.on_all_mods_loaded = function()
 	_ensure_hud_group()
-	_cleanup_all()
+	_cleanup_all(true)
 	_setup_replays_integration()
+
+	local po = get_mod("PlayerOutlines")
+	if po and PlayerOutlines then
+		mod:hook(PlayerOutlines, "update_outline", function(func, ext, unit)
+			if mod:is_enabled() and mod._hide_outlines then
+				return
+			end
+			return func(ext, unit)
+		end)
+		mod:hook(PlayerOutlines, "_update_hologram", function(func, unit, t, is_local_player_unit, player_outlines_enabled, is_in_hub)
+			if mod:is_enabled() and mod._hide_outlines then
+				if PlayerOutlines._remove_hologram then
+					PlayerOutlines._remove_hologram(unit)
+				end
+				return
+			end
+			return func(unit, t, is_local_player_unit, player_outlines_enabled, is_in_hub)
+		end)
+		mod:hook(PlayerOutlines, "apply_outline_color_to_equipment_slots", function(func, unit, outline_color, material_layers)
+			if mod:is_enabled() and mod._hide_outlines then
+				return
+			end
+			return func(unit, outline_color, material_layers)
+		end)
+	end
 end
 
 mod.on_unload = function(exit_game)
-	_cleanup_all()
+	_cleanup_all(false)
 end
 
 _ensure_hud_group()

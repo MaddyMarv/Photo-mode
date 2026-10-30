@@ -698,6 +698,27 @@ return {
 						default_value = false,
 					},
 					{
+						setting_id = "orbit_dynamic_give",
+						type = "checkbox",
+						default_value = true,
+					},
+					{
+						setting_id = "orbit_slide_give",
+						type = "numeric",
+						default_value = 0.5,
+						range = { 0.0, 1.0 },
+						decimals_number = 1,
+						step_size_value = 0.1,
+					},
+					{
+						setting_id = "orbit_pitch_give",
+						type = "numeric",
+						default_value = 0.35,
+						range = { 0.0, 1.0 },
+						decimals_number = 2,
+						step_size_value = 0.05,
+					},
+					{
 						setting_id = "toggle_orbit",
 						type = "keybind",
 						default_value = {},

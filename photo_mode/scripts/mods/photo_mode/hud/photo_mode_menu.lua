@@ -9,10 +9,14 @@ M.WIDTH = 520
 M.DEFAULT_HEIGHT = 540
 M.HEIGHT = 540
 M.TAB_HEIGHTS = {
-	time_hud = 420,
-	camera = 585,
-	rigs = 655,
+	time_hud = 370,
+	camera = 545,
+	rigs = 385,
 	lighting = 660,
+}
+M.RIGS_SUB_HEIGHTS = {
+	dolly = 385,
+	orbit = 630,
 }
 M.LAYER = 950
 M.FONT_TYPE = "proxima_nova_bold"
@@ -68,6 +72,7 @@ M.state = {
 	x = nil,
 	y = nil,
 	current_tab = "camera",
+	current_rig_sub_tab = "dolly",
 	dragging = nil,
 	drag_offset_x = 0,
 	drag_offset_y = 0,
@@ -267,13 +272,13 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 	_button(ctx, "reset_fov", "Reset", cx_start + slider_w + 10, y + 14, btn_w, 20, false, function()
 		mod.reset_fov()
 	end)
-	y = y + 36
+	y = y + 34
 
 	local lock_fov = mod._lock_fov == true
 	_button(ctx, "lock_fov", lock_fov and "LOCK FOV: ON" or "LOCK FOV: OFF", cx_start, y, w, 28, lock_fov, function()
 		mod.toggle_lock_fov()
 	end)
-	y = y + 36
+	y = y + 34
 
 	_section_header(ctx.items, "CAMERA TILT", cx_start, y, w)
 	y = y + 24
@@ -287,7 +292,7 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 	_button(ctx, "reset_tilt", "Reset", cx_start + slider_w + 10, y + 14, btn_w, 20, false, function()
 		mod.reset_tilt()
 	end)
-	y = y + 38
+	y = y + 34
 
 	_section_header(ctx.items, "DEPTH OF FIELD", cx_start, y, w)
 	y = y + 24
@@ -297,7 +302,7 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 		dof_active, function()
 		mod.toggle_dof()
 	end)
-	y = y + 36
+	y = y + 34
 
 	local dof_dist = mod._dof_distance or mod:get("dof_focal_distance") or 3.0
 	_slider(ctx, "dof_focal_distance", "Focal Distance", string.format("%.1f m", dof_dist), cx_start, y, w, 30, 0.5, 50.0,
@@ -305,21 +310,21 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 		mod:set("dof_focal_distance", v, true)
 		mod._dof_distance = v
 	end)
-	y = y + 34
+	y = y + 32
 
 	local dof_region = mod:get("dof_focal_region") or 4.0
 	_slider(ctx, "dof_focal_region", "Focal Region Depth", string.format("%.1f m", dof_region), cx_start, y, w, 30, 0.5,
 		20.0, dof_region, 0.5, 1, function(v)
 		mod:set("dof_focal_region", v, true)
 	end)
-	y = y + 34
+	y = y + 32
 
 	local dof_blur = mod:get("dof_blur_amount") or 1.0
 	_slider(ctx, "dof_blur_amount", "Background Blur Amount", string.format("%.1f", dof_blur), cx_start, y, w, 30, 0.1,
 		1.0, dof_blur, 0.1, 1, function(v)
 		mod:set("dof_blur_amount", v, true)
 	end)
-	y = y + 38
+	y = y + 34
 
 	_section_header(ctx.items, "MOUSE LOOK SMOOTHING", cx_start, y, w)
 	y = y + 24
@@ -329,19 +334,19 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 		mouse_smoothing, function()
 			mod.toggle_mouse_smoothing()
 		end)
-	y = y + 36
+	y = y + 34
 
 	local half_w = math.floor((w - 10) / 2)
 	local smoothing_amt = mod._mouse_smoothing_amount or mod:get("mouse_smoothing_amount") or 0.65
 	_slider(ctx, "mouse_smoothing_amount", "Smoothing Strength", string.format("%d%%", math.floor(smoothing_amt * 100 + 0.5)),
-		cx_start, y, half_w, 32, 0.10, 0.95, smoothing_amt, 0.05, 2, function(v)
+		cx_start, y, half_w, 30, 0.10, 0.95, smoothing_amt, 0.05, 2, function(v)
 			mod:set("mouse_smoothing_amount", v, true)
 			mod._mouse_smoothing_amount = v
 		end)
 
 	local smoothing_spd = mod._mouse_smoothing_speed or mod:get("mouse_smoothing_speed") or 1.0
 	_slider(ctx, "mouse_smoothing_speed", "Look Speed", string.format("%d%%", math.floor(smoothing_spd * 100 + 0.5)),
-		cx_start + half_w + 10, y, half_w, 32, 0.10, 3.00, smoothing_spd, 0.05, 2, function(v)
+		cx_start + half_w + 10, y, half_w, 30, 0.10, 3.00, smoothing_spd, 0.05, 2, function(v)
 			mod:set("mouse_smoothing_speed", v, true)
 			mod._mouse_smoothing_speed = v
 		end)
@@ -355,66 +360,66 @@ local function _build_time_hud_tab(ctx, cx_start, cy_start, w)
 	y = y + 24
 
 	local time_frozen = mod._time_frozen
-	_button(ctx, "freeze_time", time_frozen and "TIME: FROZEN" or "FREEZE TIME", cx_start, y, half_w, 32, time_frozen,
+	_button(ctx, "freeze_time", time_frozen and "TIME: FROZEN" or "FREEZE TIME", cx_start, y, half_w, 30, time_frozen,
 		function()
 			mod.toggle_freeze_time()
 		end)
-	_button(ctx, "step_frame", "Step 1 Frame  >", cx_start + half_w + 10, y, half_w, 32, false, function()
+	_button(ctx, "step_frame", "Step 1 Frame  >", cx_start + half_w + 10, y, half_w, 30, false, function()
 		mod.step_frame()
 	end)
-	y = y + 40
+	y = y + 36
 
 	local slomo_active = mod._slomo_active
-	_button(ctx, "toggle_slomo", slomo_active and "SLOW-MO: ON" or "SLOW-MO: OFF", cx_start, y, half_w, 32, slomo_active,
+	_button(ctx, "toggle_slomo", slomo_active and "SLOW-MO: ON" or "SLOW-MO: OFF", cx_start, y, half_w, 30, slomo_active,
 		function()
 			mod.toggle_slomo()
 		end)
 
 	local slomo_scale = mod:get("slomo_scale") or 0.10
 	_slider(ctx, "slomo_scale", "Slow-Mo Speed", string.format("%d%%", math.floor(slomo_scale * 100 + 0.5)),
-		cx_start + half_w + 10, y, half_w, 32, 0.01, 1.00, slomo_scale, 0.01, 2, function(v)
+		cx_start + half_w + 10, y, half_w, 30, 0.01, 1.00, slomo_scale, 0.01, 2, function(v)
 		mod:set("slomo_scale", v, true)
 	end)
-	y = y + 46
+	y = y + 38
 
 	_section_header(ctx.items, "HUD & SCREEN VISIBILITY", cx_start, y, w)
 	y = y + 24
 
 	local hud_hidden = mod._hud_hidden
-	_button(ctx, "toggle_hide_hud", hud_hidden and "HUD: HIDDEN" or "HIDE HUD", cx_start, y, half_w, 32, hud_hidden,
+	_button(ctx, "toggle_hide_hud", hud_hidden and "HUD: HIDDEN" or "HIDE HUD", cx_start, y, half_w, 30, hud_hidden,
 		function()
 			mod.toggle_hide_hud()
 		end)
 
 	local chat_hidden = mod._chat_hidden
-	_button(ctx, "toggle_hide_chat", chat_hidden and "CHAT: HIDDEN" or "HIDE CHAT", cx_start + half_w + 10, y, half_w, 32,
+	_button(ctx, "toggle_hide_chat", chat_hidden and "CHAT: HIDDEN" or "HIDE CHAT", cx_start + half_w + 10, y, half_w, 30,
 		chat_hidden, function()
 		mod.toggle_hide_chat()
 	end)
-	y = y + 40
+	y = y + 36
 
 	local arms_hidden = mod._arms_hidden
-	_button(ctx, "toggle_hide_arms", arms_hidden and "ARMS: HIDDEN" or "HIDE ARMS", cx_start, y, half_w, 32, arms_hidden,
+	_button(ctx, "toggle_hide_arms", arms_hidden and "ARMS: HIDDEN" or "HIDE ARMS", cx_start, y, half_w, 30, arms_hidden,
 		function()
 			mod.toggle_hide_arms()
 		end)
 
 	local fx_hidden = mod._screen_effects_hidden
 	_button(ctx, "toggle_hide_effects", fx_hidden and "FX: HIDDEN" or "SCREEN EFFECTS", cx_start + half_w + 10, y, half_w,
-		32, fx_hidden, function()
+		30, fx_hidden, function()
 		mod.toggle_hide_screen_effects()
 	end)
-	y = y + 40
+	y = y + 36
 
 	local outlines_hidden = mod._hide_outlines
 	_button(ctx, "toggle_hide_outlines", outlines_hidden and "OUTLINES: HIDDEN" or "HIDE OUTLINES", cx_start, y, half_w,
-		32, outlines_hidden, function()
+		30, outlines_hidden, function()
 		mod.toggle_hide_outlines()
 	end)
 
 	local show_chat = mod:get("show_chat_messages") ~= false
 	_button(ctx, "toggle_chat_messages", show_chat and "CHAT LOGS: ON" or "CHAT LOGS: OFF", cx_start + half_w + 10, y,
-		half_w, 32, show_chat, function()
+		half_w, 30, show_chat, function()
 		mod:set("show_chat_messages", not show_chat, true)
 	end)
 end
@@ -646,7 +651,7 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	end, { 255, 50, 125, 230 })
 end
 
-local function _build_rigs_tab(ctx, cx_start, cy_start, w)
+local function _build_rigs_dolly(ctx, cx_start, cy_start, w)
 	local y = cy_start
 	local half_w = math.floor((w - 10) / 2)
 	local third_w = math.floor((w - 20) / 3)
@@ -764,9 +769,14 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 			mod:set("dolly_duration", v, true)
 		end)
 	end
-	y = y + 38
+end
 
-	_section_header(ctx.items, "ORBIT CAMERA RIG", cx_start, y, w)
+local function _build_rigs_orbit(ctx, cx_start, cy_start, w)
+	local y = cy_start
+	local half_w = math.floor((w - 10) / 2)
+	local third_w = math.floor((w - 20) / 3)
+
+	_section_header(ctx.items, "ORBIT CONTROLS & TARGET", cx_start, y, w)
 	y = y + 24
 
 	local orbit_active = mod._orbit_active
@@ -825,7 +835,10 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 		local next_d = dir == "cw" and "ccw" or "cw"
 		mod:set("orbit_direction", next_d, true)
 	end)
-	y = y + 34
+	y = y + 36
+
+	_section_header(ctx.items, "CAMERA POSITION & MOTION", cx_start, y, w)
+	y = y + 24
 
 	local orbit_speed = mod:get("orbit_speed") or 15
 	_slider(ctx, "orbit_speed", "Orbit Speed", string.format("%d°/s", math.floor(orbit_speed + 0.5)), cx_start, y, w, 28,
@@ -916,6 +929,53 @@ local function _build_rigs_tab(ctx, cx_start, cy_start, w)
 		2.0, orbit_side_offset, 0.1, 1, function(v)
 		mod:set("orbit_side_offset", v, true)
 	end)
+	y = y + 36
+
+	_section_header(ctx.items, "DYNAMIC CAMERA GIVE", cx_start, y, w)
+	y = y + 24
+
+	local dynamic_give = mod:get("orbit_dynamic_give") ~= false
+	_button(ctx, "orbit_dynamic_give", dynamic_give and "Dynamic Give: ON" or "Dynamic Give: OFF", cx_start, y, w, 28, dynamic_give, function()
+		mod:set("orbit_dynamic_give", not dynamic_give, true)
+	end)
+	y = y + 34
+
+	local slide_give = mod:get("orbit_slide_give") or 0.5
+	local slide_text = dynamic_give and string.format("%.0f%%", slide_give * 100) or "OFF"
+	_slider(ctx, "orbit_slide_give", "Slide & Crouch Give", slide_text, cx_start, y, w, 28, 0.0, 1.0,
+		slide_give, 0.05, 2, function(v)
+		mod:set("orbit_slide_give", v, true)
+	end)
+	y = y + 32
+
+	local pitch_give = mod:get("orbit_pitch_give") or 0.35
+	local pitch_text = dynamic_give and string.format("%.0f%%", pitch_give * 100) or "OFF"
+	_slider(ctx, "orbit_pitch_give", "Look Tilt Give", pitch_text, cx_start, y, w, 28, 0.0, 1.0,
+		pitch_give, 0.05, 2, function(v)
+		mod:set("orbit_pitch_give", v, true)
+	end)
+end
+
+local function _build_rigs_tab(ctx, cx_start, cy_start, w)
+	local y = cy_start
+	local sub_tab = M.state.current_rig_sub_tab or "dolly"
+	local sub_w = math.floor((w - 10) / 2)
+	local sub_h = 28
+
+	_button(ctx, "subtab_dolly", "TRIPOD & DOLLY", cx_start, y, sub_w, sub_h, sub_tab == "dolly", function()
+		M.state.current_rig_sub_tab = "dolly"
+	end)
+
+	_button(ctx, "subtab_orbit", "ORBIT RIG", cx_start + sub_w + 10, y, sub_w, sub_h, sub_tab == "orbit", function()
+		M.state.current_rig_sub_tab = "orbit"
+	end)
+	y = y + sub_h + 12
+
+	if sub_tab == "dolly" then
+		_build_rigs_dolly(ctx, cx_start, y, w)
+	else
+		_build_rigs_orbit(ctx, cx_start, y, w)
+	end
 end
 
 function M.update(element, dt, t, ui_renderer, render_settings, input_service)
@@ -983,9 +1043,26 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 				break
 			end
 		end
+
+		if M.state.current_tab == "rigs" then
+			local content_y = test_tab_y + tab_h + 12
+			local sub_w = math.floor((content_w - 10) / 2)
+			local sub_h = 28
+			if _point_in_rect(cx, cy, test_wx + pad_x, content_y, sub_w, sub_h) then
+				M.state.current_rig_sub_tab = "dolly"
+			elseif _point_in_rect(cx, cy, test_wx + pad_x + sub_w + 10, content_y, sub_w, sub_h) then
+				M.state.current_rig_sub_tab = "orbit"
+			end
+		end
 	end
 
-	local wh = M.TAB_HEIGHTS[M.state.current_tab] or M.DEFAULT_HEIGHT
+	local wh
+	if M.state.current_tab == "rigs" then
+		local sub = M.state.current_rig_sub_tab or "dolly"
+		wh = (M.RIGS_SUB_HEIGHTS and M.RIGS_SUB_HEIGHTS[sub]) or 385
+	else
+		wh = M.TAB_HEIGHTS[M.state.current_tab] or M.DEFAULT_HEIGHT
+	end
 
 	if not M.state.x or not M.state.y then
 		M.state.x = math.floor((screen_w - ww) / 2)
