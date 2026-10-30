@@ -204,13 +204,13 @@ return {
 		en = "Hide All Outlines",
 	},
 	hide_outlines_description = {
-		en = "Stop rendering player silhouettes, enemy outlines, tags, and item highlights.",
+		en = "Hides all outlines.",
 	},
 	toggle_hide_outlines = {
 		en = "Toggle Outlines Keybind",
 	},
 	toggle_hide_outlines_description = {
-		en = "Hotkey to toggle character and object highlight outlines on or off.",
+		en = "Hotkey to toggle outlines.",
 	},
 	msg_outlines_hidden = {
 		en = "Outlines: Hidden",
@@ -255,13 +255,13 @@ return {
 		en = "Lock FOV",
 	},
 	lock_fov_description = {
-		en = "Lock field of view to prevent dynamic zooms when sprinting, aiming, or sliding.",
+		en = "Locks FOV from dynamic zooms.",
 	},
 	toggle_lock_fov = {
 		en = "Toggle Lock FOV",
 	},
 	toggle_lock_fov_description = {
-		en = "Hotkey to lock or unlock the camera field of view.",
+		en = "Hotkey to lock FOV.",
 	},
 	msg_fov_locked = {
 		en = "FOV Locked: On",
@@ -381,7 +381,7 @@ return {
 		en = "Smoothing Look Speed",
 	},
 	mouse_smoothing_speed_description = {
-		en = "Camera look speed multiplier while mouse smoothing is active.",
+		en = "Look speed while smoothing.",
 	},
 	msg_mouse_smoothing_on = {
 		en = "Mouse Smoothing: Active",
@@ -738,7 +738,7 @@ return {
 		en = "Track Position",
 	},
 	orbit_angle_description = {
-		en = "Current position along the orbit track (0° to 360°).",
+		en = "Position along the orbit track.",
 	},
 	orbit_radius = {
 		en = "Orbit Distance",
@@ -756,13 +756,13 @@ return {
 		en = "Orbit Pitch Angle",
 	},
 	orbit_pitch_description = {
-		en = "Tilt camera vertically up or down independently of height (-45° to +45°).",
+		en = "Tilt camera up or down.",
 	},
 	orbit_side_offset = {
 		en = "Orbit Shoulder Offset",
 	},
 	orbit_side_offset_description = {
-		en = "Horizontal side offset from character center (left or right shoulder).",
+		en = "Offset to left or right shoulder.",
 	},
 	orbit_direction = {
 		en = "Orbit Direction",

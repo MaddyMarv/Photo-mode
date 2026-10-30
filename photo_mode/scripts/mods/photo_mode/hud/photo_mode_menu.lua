@@ -10,7 +10,7 @@ M.DEFAULT_HEIGHT = 540
 M.HEIGHT = 540
 M.TAB_HEIGHTS = {
 	time_hud = 370,
-	camera = 545,
+	camera = 555,
 	rigs = 385,
 	lighting = 660,
 }
@@ -272,7 +272,7 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 	_button(ctx, "reset_fov", "Reset", cx_start + slider_w + 10, y + 14, btn_w, 20, false, function()
 		mod.reset_fov()
 	end)
-	y = y + 34
+	y = y + 42
 
 	local lock_fov = mod._lock_fov == true
 	_button(ctx, "lock_fov", lock_fov and "LOCK FOV: ON" or "LOCK FOV: OFF", cx_start, y, w, 28, lock_fov, function()
