@@ -213,8 +213,26 @@ local function _sync_replay_clock_scale()
 end
 
 
+local function _get_local_player(player_manager)
+	local pm = player_manager or Managers.player
+	if not pm then
+		return nil
+	end
+
+	if pm.local_player_safe then
+		return pm:local_player_safe(1)
+	end
+
+	local connection_manager = Managers.connection
+	if connection_manager and connection_manager.is_initialized and connection_manager:is_initialized() then
+		return pm:local_player(1)
+	end
+
+	return nil
+end
+
 local function _get_own_character_unit()
-	local player = Managers.player and Managers.player:local_player(1)
+	local player = _get_local_player()
 	local unit = player and player.player_unit
 	if not unit or not Unit.alive(unit) then
 		local PLAY = _is_replay_active()
@@ -323,8 +341,7 @@ local function _get_camera_transform()
 
 	local PLAY = _is_replay_active()
 	if PLAY and PLAY.pov_mode ~= "free" then
-		local player_manager = Managers.player
-		local player = player_manager and (player_manager.local_player_safe and player_manager:local_player_safe(1) or player_manager:local_player(1))
+		local player = _get_local_player()
 		local camera_manager = Managers.state.camera
 		local viewport_name = player and player.viewport_name
 
@@ -368,8 +385,7 @@ local function _get_camera_transform()
 		end
 	end
 
-	local player_manager = Managers.player
-	local player = player_manager and (player_manager.local_player_safe and player_manager:local_player_safe(1) or player_manager:local_player(1))
+	local player = _get_local_player()
 
 	if not player or not Managers.state.camera then
 		return nil, nil
@@ -403,8 +419,7 @@ local function _get_current_fov()
 		end
 	end
 
-	local player_manager = Managers.player
-	local player = player_manager and player_manager:local_player(1)
+	local player = _get_local_player()
 
 	if player and Managers.state.camera then
 		local camera_manager = Managers.state.camera
@@ -663,7 +678,7 @@ local function _reset_hud_state()
 
 	if mod._screen_effects_hidden then
 		mod._screen_effects_hidden = false
-		local player = Managers.player and Managers.player:local_player(1)
+		local player = _get_local_player()
 		local camera_handler = player and player.camera_handler
 		local mood_handler = camera_handler and camera_handler._mood_handler
 		if mood_handler and mood_handler._current_moods_status then
@@ -674,7 +689,7 @@ local function _reset_hud_state()
 	end
 
 	if mod._arms_hidden then
-		local player = Managers.player and Managers.player:local_player(1)
+		local player = _get_local_player()
 		local unit = player and player.player_unit
 		local player_visibility = unit and ScriptUnit.has_extension(unit, "player_visibility_system")
 
@@ -1257,7 +1272,7 @@ mod.set_hide_arms = function(enabled)
 		return
 	end
 
-	local player = Managers.player and Managers.player:local_player(1)
+	local player = _get_local_player()
 	local unit = player and player.player_unit
 	local player_visibility = unit and ScriptUnit.has_extension(unit, "player_visibility_system")
 
@@ -1295,7 +1310,7 @@ mod.set_hide_screen_effects = function(enabled)
 	mod._screen_effects_hidden = enabled
 	mod:set("hide_screen_effects", enabled)
 
-	local player = Managers.player and Managers.player:local_player(1)
+	local player = _get_local_player()
 	local camera_handler = player and player.camera_handler
 	local mood_handler = camera_handler and camera_handler._mood_handler
 
