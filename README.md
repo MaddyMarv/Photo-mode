@@ -138,6 +138,10 @@ To do:
 - Orbit Pitch Angle
 - Orbit Shoulder Offset
 - Orbit Direction [Clockwise, Counter-Clockwise]
+
+**Profiles**
+- Profile 1-5 Name
+- Load Profile 1-5 (Hotkey)
 </details>
 
 🔗 **Links:** [Source Code](https://github.com/MaddyMarv/Photo-mode) | [Nexus Mods Profile](https://www.nexusmods.com/profile/indicabunny) | [Support Me on Ko-fi](https://ko-fi.com/indicabunny)

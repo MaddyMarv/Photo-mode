@@ -133,6 +133,10 @@ To do:
 - Orbit Pitch Angle
 - Orbit Shoulder Offset
 - Orbit Direction [Clockwise, Counter-Clockwise]
+
+[b]Profiles[/b]
+- Profile 1-5 Name
+- Load Profile 1-5 (Hotkey)
 [/spoiler]
 
 [b]Links:[/b]

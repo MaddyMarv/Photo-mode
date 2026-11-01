@@ -8,15 +8,17 @@ local M = {}
 M.WIDTH = 520
 M.DEFAULT_HEIGHT = 540
 M.HEIGHT = 540
+M.PROFILE_BLOCK_HEIGHT = 120
+M.PROFILE_EXTRA_HEIGHT = 88
 M.TAB_HEIGHTS = {
-	time_hud = 370,
-	camera = 555,
-	rigs = 385,
-	lighting = 660,
+	time_hud = 370 + M.PROFILE_EXTRA_HEIGHT + 12,
+	camera = 555 + M.PROFILE_EXTRA_HEIGHT,
+	rigs = 385 + M.PROFILE_EXTRA_HEIGHT,
+	lighting = 660 + M.PROFILE_EXTRA_HEIGHT,
 }
 M.RIGS_SUB_HEIGHTS = {
-	dolly = 385,
-	orbit = 630,
+	dolly = 385 + M.PROFILE_EXTRA_HEIGHT,
+	orbit = 630 + M.PROFILE_EXTRA_HEIGHT,
 }
 M.LAYER = 950
 M.FONT_TYPE = "proxima_nova_bold"
@@ -1217,9 +1219,100 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 
 	local footer_btn_h = 28
 	local footer_btn_y = wy + wh - footer_btn_h - 14
-	local footer_line_y = footer_btn_y - 10
+	local footer_line_y = footer_btn_y - 8
 
 	_add_rect(items, wx + pad_x, footer_line_y, content_w, 1, colors.section_line, 2)
+
+	local prof_y = footer_line_y - M.PROFILE_BLOCK_HEIGHT + 18
+	_section_header(items, "PROFILES", wx + pad_x, prof_y, content_w)
+	prof_y = prof_y + 28
+	local sel = M.state.profile_sel or mod:get("active_profile") or 1
+	local slot_gap = 12
+	local slot_w = math.floor((content_w - slot_gap * 4) / 5)
+	local renaming = M.state.rename_slot
+
+	if renaming then
+		local text = M.state.rename_text or ""
+		for _, key in ipairs(Keyboard.keystrokes()) do
+			if key == Keyboard.BACKSPACE then
+				if #text > 0 then
+					text = Utf8.string_remove(text, Utf8.string_length(text))
+				end
+			elseif type(key) == "string" and key >= " " and key ~= "\x7F" and Utf8.string_length(text) < 18 then
+				text = text .. key
+			end
+		end
+		if Keyboard.pressed(Keyboard.button_index("enter")) then
+			mod:set("profile_" .. renaming .. "_name", text, true)
+			M.state.rename_slot = nil
+		elseif Keyboard.pressed(Keyboard.button_index("esc")) then
+			M.state.rename_slot = nil
+		end
+		M.state.rename_text = text
+		renaming = M.state.rename_slot
+	end
+
+	if renaming and left_pressed and cx then
+		local slot_x = wx + pad_x + (renaming - 1) * (slot_w + slot_gap)
+		if not _point_in_rect(cx, cy, slot_x, prof_y, slot_w, 28) then
+			mod:set("profile_" .. renaming .. "_name", M.state.rename_text or "", true)
+			M.state.rename_slot = nil
+			renaming = nil
+		end
+	end
+
+	mod._typing = renaming ~= nil and mod._menu_open == true
+
+	for n = 1, 5 do
+		local label
+		if renaming == n then
+			label = (M.state.rename_text or "") .. "_"
+		else
+			label = string.sub(mod.profile_name(n), 1, 14)
+			if not mod.profile_exists(n) then
+				label = label .. "*"
+			end
+		end
+		_button(ctx, "profile_slot_" .. n, label, wx + pad_x + (n - 1) * (slot_w + slot_gap), prof_y, slot_w, 28,
+			sel == n, function()
+				local now = Application.time_since_launch()
+				if M.state.last_slot_click == n and now - (M.state.last_slot_click_t or 0) < 0.4 then
+					M.state.rename_slot = n
+					M.state.rename_text = mod:get("profile_" .. n .. "_name") or ""
+				end
+				M.state.last_slot_click = n
+				M.state.last_slot_click_t = now
+				M.state.profile_sel = n
+				M.state.delete_confirm = nil
+			end)
+	end
+	prof_y = prof_y + 38
+	local pbtn_w = math.floor((content_w - 24) / 3)
+	_button(ctx, "profile_save", "SAVE TO SLOT", wx + pad_x, prof_y, pbtn_w, 28, false, function()
+		M.state.delete_confirm = nil
+		mod.save_profile(sel)
+	end)
+	_button(ctx, "profile_load", "LOAD SLOT", wx + pad_x + pbtn_w + 12, prof_y, pbtn_w, 28, false, function()
+		M.state.delete_confirm = nil
+		mod.load_profile(sel)
+	end)
+	if M.state.delete_confirm and Application.time_since_launch() - (M.state.delete_confirm_t or 0) > 3 then
+		M.state.delete_confirm = nil
+	end
+	local confirming = M.state.delete_confirm == sel
+	_button(ctx, "profile_delete", confirming and "CONFIRM DELETE?" or "DELETE SLOT",
+		wx + pad_x + (pbtn_w + 12) * 2, prof_y, pbtn_w, 28, confirming, function()
+			if confirming then
+				mod.delete_profile(sel)
+				M.state.delete_confirm = nil
+			elseif mod.profile_exists(sel) then
+				M.state.delete_confirm = sel
+				M.state.delete_confirm_t = Application.time_since_launch()
+			end
+		end)
+	if M.state.delete_confirm and M.state.delete_confirm ~= sel then
+		M.state.delete_confirm = nil
+	end
 
 	local footer_gap = 12
 	local footer_btn_w = math.floor((content_w - footer_gap) / 2)

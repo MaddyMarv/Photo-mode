@@ -857,4 +857,82 @@ return {
 	msg_reset_all = {
 		en = "Photo Mode: All Settings Reset to Default",
 	},
+	tab_profiles = {
+		en = "Profiles",
+	},
+	profiles_group = {
+		en = "Profiles",
+	},
+	msg_profile_saved = {
+		en = "Profile Saved",
+	},
+	msg_profile_loaded = {
+		en = "Profile Loaded",
+	},
+	msg_profile_deleted = {
+		en = "Profile Deleted",
+	},
+	msg_profile_empty = {
+		en = "Profile Empty",
+	},
+	profile_1_name = {
+		en = "Profile 1 Name",
+	},
+	profile_1_name_description = {
+		en = "Custom name for profile 1.",
+	},
+	load_profile_1 = {
+		en = "Load Profile 1",
+	},
+	load_profile_1_description = {
+		en = "Hotkey to load profile 1.",
+	},
+	profile_2_name = {
+		en = "Profile 2 Name",
+	},
+	profile_2_name_description = {
+		en = "Custom name for profile 2.",
+	},
+	load_profile_2 = {
+		en = "Load Profile 2",
+	},
+	load_profile_2_description = {
+		en = "Hotkey to load profile 2.",
+	},
+	profile_3_name = {
+		en = "Profile 3 Name",
+	},
+	profile_3_name_description = {
+		en = "Custom name for profile 3.",
+	},
+	load_profile_3 = {
+		en = "Load Profile 3",
+	},
+	load_profile_3_description = {
+		en = "Hotkey to load profile 3.",
+	},
+	profile_4_name = {
+		en = "Profile 4 Name",
+	},
+	profile_4_name_description = {
+		en = "Custom name for profile 4.",
+	},
+	load_profile_4 = {
+		en = "Load Profile 4",
+	},
+	load_profile_4_description = {
+		en = "Hotkey to load profile 4.",
+	},
+	profile_5_name = {
+		en = "Profile 5 Name",
+	},
+	profile_5_name_description = {
+		en = "Custom name for profile 5.",
+	},
+	load_profile_5 = {
+		en = "Load Profile 5",
+	},
+	load_profile_5_description = {
+		en = "Hotkey to load profile 5.",
+	},
 }
