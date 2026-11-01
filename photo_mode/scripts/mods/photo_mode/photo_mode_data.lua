@@ -832,7 +832,7 @@ return {
 						setting_id = "profile_1_name",
 						type = "text",
 						default_value = "",
-						max_length = 18,
+						max_length = 15,
 						placeholder_text = "Profile 1",
 					},
 					{
@@ -848,7 +848,7 @@ return {
 						setting_id = "profile_2_name",
 						type = "text",
 						default_value = "",
-						max_length = 18,
+						max_length = 15,
 						placeholder_text = "Profile 2",
 					},
 					{
@@ -864,7 +864,7 @@ return {
 						setting_id = "profile_3_name",
 						type = "text",
 						default_value = "",
-						max_length = 18,
+						max_length = 15,
 						placeholder_text = "Profile 3",
 					},
 					{
@@ -880,7 +880,7 @@ return {
 						setting_id = "profile_4_name",
 						type = "text",
 						default_value = "",
-						max_length = 18,
+						max_length = 15,
 						placeholder_text = "Profile 4",
 					},
 					{
@@ -896,7 +896,7 @@ return {
 						setting_id = "profile_5_name",
 						type = "text",
 						default_value = "",
-						max_length = 18,
+						max_length = 15,
 						placeholder_text = "Profile 5",
 					},
 					{

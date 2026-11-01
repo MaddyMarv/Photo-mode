@@ -1238,7 +1238,7 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 				if #text > 0 then
 					text = Utf8.string_remove(text, Utf8.string_length(text))
 				end
-			elseif type(key) == "string" and key >= " " and key ~= "\x7F" and Utf8.string_length(text) < 18 then
+			elseif type(key) == "string" and key >= " " and key ~= "\x7F" and Utf8.string_length(text) < 15 then
 				text = text .. key
 			end
 		end
@@ -1268,7 +1268,7 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 		if renaming == n then
 			label = (M.state.rename_text or "") .. "_"
 		else
-			label = string.sub(mod.profile_name(n), 1, 14)
+			label = string.sub(mod.profile_name(n), 1, 15)
 			if not mod.profile_exists(n) then
 				label = label .. "*"
 			end
