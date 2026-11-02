@@ -187,10 +187,10 @@ local function _ensure_free_flight_active(seed_pos, seed_rot)
 	end
 
 	local ff = Managers.free_flight
-	if ff then
+	local cam_ff = get_mod("camera_freeflight")
+	if ff and cam_ff and cam_ff:is_enabled() then
 		if not ff:is_in_free_flight() then
-			local cam_ff = get_mod("camera_freeflight")
-			if cam_ff and cam_ff.is_in_free_flight and not cam_ff:is_in_free_flight() and cam_ff.toggle_freeflight then
+			if cam_ff.is_in_free_flight and not cam_ff:is_in_free_flight() and cam_ff.toggle_freeflight then
 				mod._ensuring_free_flight = true
 				cam_ff:toggle_freeflight()
 				mod._ensuring_free_flight = false
