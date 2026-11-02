@@ -688,6 +688,7 @@ local function _reset_hud_state()
 		end
 	end
 
+	mod._arms_pending = false
 	if mod._arms_hidden then
 		mod._set_arms_visibility(true)
 		mod._arms_hidden = false
@@ -774,10 +775,11 @@ local function _cleanup_all(keep_orbit)
 	local is_char = (target_mode == "follow" or target_mode == "character")
 	local can_persist_orbit = keep_orbit and mod._orbit_active and is_char
 
+	mod._orbit_center = nil
+
 	if not can_persist_orbit then
 		mod._orbit_active = false
 		mod._orbit_paused = true
-		mod._orbit_center = nil
 		if not is_char then
 			mod:set("orbit_active", false)
 		end
@@ -1133,12 +1135,22 @@ mod.load_profile = function(slot)
 		return
 	end
 
+	if values.orbit_active and values.orbit_target_mode == "custom" then
+		mod._orbit_center = nil
+		mod._orbit_angle = math.rad(values.orbit_angle or 0)
+	end
+
+	if values.orbit_target_mode then
+		mod:set("orbit_follow_rotation", values.orbit_target_mode == "follow", true)
+	end
+
 	local was_silent = mod._silent_reset
 	mod._silent_reset = true
 	for i = 1, #PROFILE_KEYS do
 		local key = PROFILE_KEYS[i][1]
-		if values[key] ~= nil then
-			mod:set(key, values[key], true)
+		local v = values[key]
+		if v ~= nil then
+			mod:set(key, v, true)
 		end
 	end
 	mod._silent_reset = was_silent
@@ -1455,6 +1467,8 @@ mod.set_hide_arms = function(enabled)
 		return
 	end
 
+	mod._arms_pending = false
+
 	if mod._set_arms_visibility(not enabled) then
 		mod._arms_hidden = enabled
 		mod:set("hide_arms", enabled)
@@ -1462,6 +1476,8 @@ mod.set_hide_arms = function(enabled)
 		if not mod._silent_reset then
 			mod:echo(mod:localize(enabled and "msg_arms_hidden" or "msg_arms_shown"))
 		end
+	elseif enabled then
+		mod._arms_pending = true
 	end
 end
 
@@ -2054,6 +2070,10 @@ local function _get_orbit_center()
 		if unit and Unit.alive(unit) then
 			return _get_unit_shoulder_center(unit, side_offset)
 		end
+
+		if mod._orbit_smooth_center then
+			return mod._orbit_smooth_center:unbox()
+		end
 	end
 
 	if mod._orbit_center then
@@ -2096,7 +2116,8 @@ mod.orbit_set_center = function()
 		local physics_world = World.physics_world(world)
 		if physics_world then
 			local fwd = Quaternion.forward(rot)
-			local hit, hit_pos = PhysicsWorld.raycast(physics_world, pos, fwd, 50, "closest", "types", "both")
+			local hit, hit_pos = PhysicsWorld.raycast(physics_world, pos, fwd, 50, "closest", "types", "statics",
+				"collision_filter", "filter_player_character_shooting_raycast_statics")
 			if hit then
 				center = hit_pos
 			end
@@ -2153,10 +2174,6 @@ mod.set_orbit_active = function(enabled)
 			mod:echo(mod:localize("msg_orbit_no_center"))
 			mod:set("orbit_active", false)
 			return
-		end
-
-		if not mod._orbit_center then
-			mod._orbit_center = Vector3Box(center)
 		end
 
 		local target_mode = mod:get("orbit_target_mode") or "follow"
@@ -2519,6 +2536,9 @@ end
 mod.update = function(dt)
 	if mod._arms_hidden and mod:is_enabled() then
 		mod._set_arms_visibility(false)
+	elseif mod._arms_pending and mod:is_enabled() and mod._set_arms_visibility(false) then
+		mod._arms_hidden = true
+		mod._arms_pending = false
 	end
 
 	if mod._step_frames_remaining and mod._step_frames_remaining > 0 then
@@ -2739,6 +2759,10 @@ mod.update = function(dt)
 				end
 			else
 				mod._orbit_smooth_center = nil
+
+				if not mod._orbit_center then
+					mod._orbit_center = Vector3Box(center)
+				end
 			end
 
 			if not mod._orbit_paused then
@@ -3526,6 +3550,9 @@ mod.on_setting_changed = function(setting_id)
 		end
 	elseif setting_id == "hide_arms" then
 		local val = mod:get("hide_arms")
+		if not val then
+			mod._arms_pending = false
+		end
 		if val ~= mod._arms_hidden then
 			mod.set_hide_arms(val)
 		end

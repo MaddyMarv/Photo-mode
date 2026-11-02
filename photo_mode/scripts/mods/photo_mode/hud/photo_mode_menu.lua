@@ -10,6 +10,7 @@ M.DEFAULT_HEIGHT = 540
 M.HEIGHT = 540
 M.PROFILE_BLOCK_HEIGHT = 120
 M.PROFILE_EXTRA_HEIGHT = 88
+M.PROFILE_COLLAPSE_SHRINK = 74
 M.TAB_HEIGHTS = {
 	time_hud = 370 + M.PROFILE_EXTRA_HEIGHT + 12,
 	camera = 555 + M.PROFILE_EXTRA_HEIGHT,
@@ -81,6 +82,7 @@ M.state = {
 	pressed_id = nil,
 	hover_id = nil,
 	cursor_pushed = false,
+	profiles_collapsed = mod:get("profiles_collapsed") == true,
 }
 
 local function _point_in_rect(px, py, rx, ry, rw, rh)
@@ -1066,6 +1068,10 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 		wh = M.TAB_HEIGHTS[M.state.current_tab] or M.DEFAULT_HEIGHT
 	end
 
+	if M.state.profiles_collapsed then
+		wh = wh - M.PROFILE_COLLAPSE_SHRINK
+	end
+
 	if not M.state.x or not M.state.y then
 		M.state.x = math.floor((screen_w - ww) / 2)
 		M.state.y = 80
@@ -1223,95 +1229,134 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 
 	_add_rect(items, wx + pad_x, footer_line_y, content_w, 1, colors.section_line, 2)
 
-	local prof_y = footer_line_y - M.PROFILE_BLOCK_HEIGHT + 18
-	_section_header(items, "PROFILES", wx + pad_x, prof_y, content_w)
-	prof_y = prof_y + 28
-	local sel = M.state.profile_sel or mod:get("active_profile") or 1
-	local slot_gap = 12
-	local slot_w = math.floor((content_w - slot_gap * 4) / 5)
-	local renaming = M.state.rename_slot
-
-	if renaming then
-		local text = M.state.rename_text or ""
-		for _, key in ipairs(Keyboard.keystrokes()) do
-			if key == Keyboard.BACKSPACE then
-				if #text > 0 then
-					text = Utf8.string_remove(text, Utf8.string_length(text))
-				end
-			elseif type(key) == "string" and key >= " " and key ~= "\x7F" and Utf8.string_length(text) < 15 then
-				text = text .. key
+	local collapsed = M.state.profiles_collapsed
+	local prof_y = collapsed and (footer_line_y - 28) or (footer_line_y - M.PROFILE_BLOCK_HEIGHT + 18)
+	_add_text(items, "PROFILES", wx + pad_x, prof_y - 2, 90, 18, 14, colors.section_header, "left", 2)
+	_add_rect(items, wx + pad_x, prof_y + 19, content_w, 1, colors.section_line, 2)
+	_button(ctx, "profile_collapse", collapsed and "SHOW" or "HIDE", wx + pad_x + 60, prof_y - 3, 50, 20,
+		false, function()
+			M.state.profiles_collapsed = not M.state.profiles_collapsed
+			M.state.confirm_kind = nil
+			M.state.confirm_slot = nil
+			if M.state.rename_slot then
+				mod:set("profile_" .. M.state.rename_slot .. "_name", M.state.rename_text or "", true)
+				M.state.rename_slot = nil
 			end
-		end
-		if Keyboard.pressed(Keyboard.button_index("enter")) then
-			mod:set("profile_" .. renaming .. "_name", text, true)
-			M.state.rename_slot = nil
-		elseif Keyboard.pressed(Keyboard.button_index("esc")) then
-			M.state.rename_slot = nil
-		end
-		M.state.rename_text = text
-		renaming = M.state.rename_slot
-	end
-
-	if renaming and left_pressed and cx then
-		local slot_x = wx + pad_x + (renaming - 1) * (slot_w + slot_gap)
-		if not _point_in_rect(cx, cy, slot_x, prof_y, slot_w, 28) then
-			mod:set("profile_" .. renaming .. "_name", M.state.rename_text or "", true)
-			M.state.rename_slot = nil
-			renaming = nil
-		end
-	end
-
-	mod._typing = renaming ~= nil and mod._menu_open == true
-
-	for n = 1, 5 do
-		local label
-		if renaming == n then
-			label = (M.state.rename_text or "") .. "_"
-		else
-			label = string.sub(mod.profile_name(n), 1, 15)
-			if not mod.profile_exists(n) then
-				label = label .. "*"
-			end
-		end
-		_button(ctx, "profile_slot_" .. n, label, wx + pad_x + (n - 1) * (slot_w + slot_gap), prof_y, slot_w, 28,
-			sel == n, function()
-				local now = Application.time_since_launch()
-				if M.state.last_slot_click == n and now - (M.state.last_slot_click_t or 0) < 0.4 then
-					M.state.rename_slot = n
-					M.state.rename_text = mod:get("profile_" .. n .. "_name") or ""
-				end
-				M.state.last_slot_click = n
-				M.state.last_slot_click_t = now
-				M.state.profile_sel = n
-				M.state.delete_confirm = nil
-			end)
-	end
-	prof_y = prof_y + 38
-	local pbtn_w = math.floor((content_w - 24) / 3)
-	_button(ctx, "profile_save", "SAVE TO SLOT", wx + pad_x, prof_y, pbtn_w, 28, false, function()
-		M.state.delete_confirm = nil
-		mod.save_profile(sel)
-	end)
-	_button(ctx, "profile_load", "LOAD SLOT", wx + pad_x + pbtn_w + 12, prof_y, pbtn_w, 28, false, function()
-		M.state.delete_confirm = nil
-		mod.load_profile(sel)
-	end)
-	if M.state.delete_confirm and Application.time_since_launch() - (M.state.delete_confirm_t or 0) > 3 then
-		M.state.delete_confirm = nil
-	end
-	local confirming = M.state.delete_confirm == sel
-	_button(ctx, "profile_delete", confirming and "CONFIRM DELETE?" or "DELETE SLOT",
-		wx + pad_x + (pbtn_w + 12) * 2, prof_y, pbtn_w, 28, confirming, function()
-			if confirming then
-				mod.delete_profile(sel)
-				M.state.delete_confirm = nil
-			elseif mod.profile_exists(sel) then
-				M.state.delete_confirm = sel
-				M.state.delete_confirm_t = Application.time_since_launch()
-			end
+			mod:set("profiles_collapsed", M.state.profiles_collapsed)
 		end)
-	if M.state.delete_confirm and M.state.delete_confirm ~= sel then
-		M.state.delete_confirm = nil
+	prof_y = prof_y + 28
+
+	if collapsed then
+		mod._typing = false
+	else
+		local sel = M.state.profile_sel or mod:get("active_profile") or 1
+		local slot_gap = 12
+		local slot_w = math.floor((content_w - slot_gap * 4) / 5)
+		local renaming = M.state.rename_slot
+
+		if renaming then
+			local text = M.state.rename_text or ""
+			for _, key in ipairs(Keyboard.keystrokes()) do
+				if key == Keyboard.BACKSPACE then
+					if #text > 0 then
+						text = Utf8.string_remove(text, Utf8.string_length(text))
+					end
+				elseif type(key) == "string" and key >= " " and key ~= "\x7F" and Utf8.string_length(text) < 15 then
+					text = text .. key
+				end
+			end
+			if Keyboard.pressed(Keyboard.button_index("enter")) then
+				mod:set("profile_" .. renaming .. "_name", text, true)
+				M.state.rename_slot = nil
+			elseif Keyboard.pressed(Keyboard.button_index("esc")) then
+				M.state.rename_slot = nil
+			end
+			M.state.rename_text = text
+			renaming = M.state.rename_slot
+		end
+
+		if renaming and left_pressed and cx then
+			local slot_x = wx + pad_x + (renaming - 1) * (slot_w + slot_gap)
+			if not _point_in_rect(cx, cy, slot_x, prof_y, slot_w, 28) then
+				mod:set("profile_" .. renaming .. "_name", M.state.rename_text or "", true)
+				M.state.rename_slot = nil
+				renaming = nil
+			end
+		end
+
+		mod._typing = renaming ~= nil and mod._menu_open == true
+
+		for n = 1, 5 do
+			local label
+			if renaming == n then
+				label = (M.state.rename_text or "") .. "_"
+			else
+				label = string.sub(mod.profile_name(n), 1, 15)
+				if not mod.profile_exists(n) then
+					label = label .. "*"
+				end
+			end
+			_button(ctx, "profile_slot_" .. n, label, wx + pad_x + (n - 1) * (slot_w + slot_gap), prof_y, slot_w, 28,
+				sel == n, function()
+					local now = Application.time_since_launch()
+					if M.state.last_slot_click == n and now - (M.state.last_slot_click_t or 0) < 0.4 then
+						M.state.rename_slot = n
+						M.state.rename_text = mod:get("profile_" .. n .. "_name") or ""
+					end
+					M.state.last_slot_click = n
+					M.state.last_slot_click_t = now
+					M.state.profile_sel = n
+					M.state.confirm_kind = nil
+					M.state.confirm_slot = nil
+				end)
+		end
+		prof_y = prof_y + 38
+		local pbtn_w = math.floor((content_w - 24) / 3)
+		local now = Application.time_since_launch()
+		if M.state.confirm_slot and (M.state.confirm_slot ~= sel or now - (M.state.confirm_t or 0) > 3) then
+			M.state.confirm_kind = nil
+			M.state.confirm_slot = nil
+		end
+		local confirm_save = M.state.confirm_kind == "save" and M.state.confirm_slot == sel
+		local confirm_delete = M.state.confirm_kind == "delete" and M.state.confirm_slot == sel
+
+		local confirm_colors = {
+			bg = { 255, 70, 24, 30 },
+			border = { 255, 200, 60, 70 },
+			text = { 255, 255, 205, 205 },
+			hover_bg = { 255, 95, 30, 38 },
+			hover_border = { 255, 230, 80, 90 },
+		}
+
+		_button(ctx, "profile_save", confirm_save and "OVERWRITE SLOT?" or "SAVE TO SLOT", wx + pad_x, prof_y, pbtn_w, 28,
+			false, function()
+				if confirm_save or not mod.profile_exists(sel) then
+					mod.save_profile(sel)
+					M.state.confirm_kind = nil
+					M.state.confirm_slot = nil
+				else
+					M.state.confirm_kind = "save"
+					M.state.confirm_slot = sel
+					M.state.confirm_t = now
+				end
+			end, confirm_save and confirm_colors or nil)
+		_button(ctx, "profile_load", "LOAD SLOT", wx + pad_x + pbtn_w + 12, prof_y, pbtn_w, 28, false, function()
+			M.state.confirm_kind = nil
+			M.state.confirm_slot = nil
+			mod.load_profile(sel)
+		end)
+		_button(ctx, "profile_delete", confirm_delete and "CONFIRM DELETE?" or "DELETE SLOT",
+			wx + pad_x + (pbtn_w + 12) * 2, prof_y, pbtn_w, 28, false, function()
+				if confirm_delete then
+					mod.delete_profile(sel)
+					M.state.confirm_kind = nil
+					M.state.confirm_slot = nil
+				elseif mod.profile_exists(sel) then
+					M.state.confirm_kind = "delete"
+					M.state.confirm_slot = sel
+					M.state.confirm_t = now
+				end
+			end, confirm_delete and confirm_colors or nil)
 	end
 
 	local footer_gap = 12
