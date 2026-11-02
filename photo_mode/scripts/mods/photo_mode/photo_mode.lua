@@ -207,6 +207,18 @@ local function _ensure_free_flight_active(seed_pos, seed_rot)
 	return false
 end
 
+local function _exit_free_flight()
+	local ff = Managers.free_flight
+	local cam_ff = get_mod("camera_freeflight")
+	if _is_replay_active() or not (ff and ff:is_in_free_flight() and cam_ff and cam_ff.toggle_freeflight) then
+		return
+	end
+
+	mod._ensuring_free_flight = true
+	cam_ff:toggle_freeflight()
+	mod._ensuring_free_flight = false
+end
+
 local function _sync_replay_clock_scale()
 	local PLAY = _is_replay_active()
 	if PLAY and PLAY.set_clock_scale and PLAY.wanted_clock_scale then
@@ -299,12 +311,14 @@ local function _update_rig_perspective(force_enable)
 					local restore_3p = false
 					if perspectives and perspectives:is_enabled() and perspectives.is_requesting_third_person then
 						restore_3p = perspectives.is_requesting_third_person()
-					elseif mod._rig_prev_force_3p ~= nil then
-						restore_3p = mod._rig_prev_force_3p
-					end
+					else
+						if mod._rig_prev_force_3p ~= nil then
+							restore_3p = mod._rig_prev_force_3p
+						end
 
-					if not restore_3p and Managers.state and Managers.state.mission and Managers.state.mission.force_third_person_mode then
-						restore_3p = Managers.state.mission:force_third_person_mode() or false
+						if not restore_3p and Managers.state and Managers.state.mission and Managers.state.mission.force_third_person_mode then
+							restore_3p = Managers.state.mission:force_third_person_mode() or false
+						end
 					end
 
 					fp_ext._force_third_person_mode = restore_3p
@@ -1660,6 +1674,7 @@ mod.set_tripod_active = function(enabled)
 		mod._tripod_rot = QuaternionBox(rot)
 		mod._tripod_active = true
 		mod:set("tripod_active", true)
+		_exit_free_flight()
 		_update_rig_perspective()
 		if not mod._silent_reset then
 			mod:echo(mod:localize("msg_tripod_on"))
@@ -2200,6 +2215,7 @@ mod.set_orbit_active = function(enabled)
 		mod._orbit_paused = true
 		mod:set("orbit_active", true)
 		mod:set("orbit_paused", true)
+		_exit_free_flight()
 		_update_rig_perspective()
 		if not mod._silent_reset then
 			mod:echo(mod:localize("msg_orbit_started"))
