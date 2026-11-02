@@ -191,7 +191,9 @@ local function _ensure_free_flight_active(seed_pos, seed_rot)
 		if not ff:is_in_free_flight() then
 			local cam_ff = get_mod("camera_freeflight")
 			if cam_ff and cam_ff.is_in_free_flight and not cam_ff:is_in_free_flight() and cam_ff.toggle_freeflight then
+				mod._ensuring_free_flight = true
 				cam_ff:toggle_freeflight()
+				mod._ensuring_free_flight = false
 			end
 
 			if not ff:is_in_free_flight() and ff._enter_global_free_flight and ff._free_flight_cameras and ff._free_flight_cameras.global then
@@ -3906,6 +3908,25 @@ mod.on_all_mods_loaded = function()
 	_ensure_hud_group()
 	_cleanup_all(true)
 	_setup_replays_integration()
+
+	local cam_ff = get_mod("camera_freeflight")
+	if cam_ff and cam_ff.toggle_freeflight then
+		mod:hook_safe(cam_ff, "toggle_freeflight", function()
+			if mod._ensuring_free_flight or Managers.ui:chat_using_input() then
+				return
+			end
+
+			if mod._tripod_active then
+				mod.set_tripod_active(false)
+			end
+			if mod._dolly_active then
+				mod.set_dolly_active(false)
+			end
+			if mod._orbit_active then
+				mod.set_orbit_active(false)
+			end
+		end)
+	end
 
 	local po = get_mod("PlayerOutlines")
 	if po and PlayerOutlines then
