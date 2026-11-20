@@ -196,7 +196,12 @@ local function _ensure_free_flight_active(seed_pos, seed_rot)
 				mod._ensuring_free_flight = false
 			end
 
-			if not ff:is_in_free_flight() and ff._enter_global_free_flight and ff._free_flight_cameras and ff._free_flight_cameras.global then
+			if
+				not ff:is_in_free_flight()
+				and ff._enter_global_free_flight
+				and ff._free_flight_cameras
+				and ff._free_flight_cameras.global
+			then
 				ff:_enter_global_free_flight(ff._free_flight_cameras.global)
 			end
 		end
@@ -225,7 +230,6 @@ local function _sync_replay_clock_scale()
 		PLAY.set_clock_scale(PLAY.wanted_clock_scale())
 	end
 end
-
 
 local function _get_local_player(player_manager)
 	local pm = player_manager or Managers.player
@@ -316,7 +320,12 @@ local function _update_rig_perspective(force_enable)
 							restore_3p = mod._rig_prev_force_3p
 						end
 
-						if not restore_3p and Managers.state and Managers.state.mission and Managers.state.mission.force_third_person_mode then
+						if
+							not restore_3p
+							and Managers.state
+							and Managers.state.mission
+							and Managers.state.mission.force_third_person_mode
+						then
 							restore_3p = Managers.state.mission:force_third_person_mode() or false
 						end
 					end
@@ -525,7 +534,6 @@ local function _apply_light_settings(light_obj, settings)
 		Light.set_type(light_obj, "omni")
 	end
 end
-
 
 local function _sync_settings_from_light(s)
 	if not s then
@@ -1183,9 +1191,25 @@ end
 
 local function _guard_hotkeys_while_typing()
 	local prefixes = {
-		"toggle_", "increase_", "decrease_", "step_frame", "zoom_", "tilt_", "reset_fov", "reset_tilt",
-		"place_light", "undo_light", "delete_selected_light", "select_prev_light", "select_next_light",
-		"clear_lights", "inc_dof", "dec_dof", "dolly_", "orbit_set_center", "load_profile_",
+		"toggle_",
+		"increase_",
+		"decrease_",
+		"step_frame",
+		"zoom_",
+		"tilt_",
+		"reset_fov",
+		"reset_tilt",
+		"place_light",
+		"undo_light",
+		"delete_selected_light",
+		"select_prev_light",
+		"select_next_light",
+		"clear_lights",
+		"inc_dof",
+		"dec_dof",
+		"dolly_",
+		"orbit_set_center",
+		"load_profile_",
 	}
 	for name, fn in pairs(mod) do
 		if type(fn) == "function" and type(name) == "string" and name ~= "toggle_photo_menu" then
@@ -1734,8 +1758,14 @@ mod.dolly_add_point = function(label)
 	})
 	mod._selected_dolly_index = #mod._dolly_points
 
-	mod:echo(mod:localize("msg_dolly_point_added") ..
-	": Point " .. tostring(name) .. " (" .. tostring(#mod._dolly_points) .. " total)")
+	mod:echo(
+		mod:localize("msg_dolly_point_added")
+			.. ": Point "
+			.. tostring(name)
+			.. " ("
+			.. tostring(#mod._dolly_points)
+			.. " total)"
+	)
 end
 
 mod.dolly_clear_points = function()
@@ -1778,7 +1808,14 @@ mod.dolly_undo_point = function()
 	end
 
 	local pt_name = removed_pt and removed_pt.name or tostring(count)
-	mod:echo(mod:localize("msg_dolly_point_undone") .. ": Point " .. tostring(pt_name) .. " (" .. tostring(remaining) .. " left)")
+	mod:echo(
+		mod:localize("msg_dolly_point_undone")
+			.. ": Point "
+			.. tostring(pt_name)
+			.. " ("
+			.. tostring(remaining)
+			.. " left)"
+	)
 end
 
 mod.undo_dolly_point = mod.dolly_undo_point
@@ -1815,7 +1852,16 @@ mod.select_dolly_point = function(index, silent)
 
 	local pt = mod._dolly_points[index]
 	if not silent and pt then
-		mod:echo(mod:localize("msg_dolly_point_selected") .. ": Point " .. tostring(pt.name) .. " (" .. tostring(index) .. " of " .. tostring(count) .. ")")
+		mod:echo(
+			mod:localize("msg_dolly_point_selected")
+				.. ": Point "
+				.. tostring(pt.name)
+				.. " ("
+				.. tostring(index)
+				.. " of "
+				.. tostring(count)
+				.. ")"
+		)
 	end
 end
 
@@ -1879,7 +1925,14 @@ mod.delete_selected_dolly_point = function()
 	end
 
 	local pt_name = removed_pt and removed_pt.name or tostring(sel_idx)
-	mod:echo(mod:localize("msg_dolly_point_deleted") .. ": Point " .. tostring(pt_name) .. " (" .. tostring(remaining) .. " left)")
+	mod:echo(
+		mod:localize("msg_dolly_point_deleted")
+			.. ": Point "
+			.. tostring(pt_name)
+			.. " ("
+			.. tostring(remaining)
+			.. " left)"
+	)
 end
 
 mod.dolly_goto_point = function(index)
@@ -1925,7 +1978,8 @@ mod.dolly_goto_point = function(index)
 	else
 		local world = _get_level_world()
 		if world then
-			local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+			local ff_viewport = ScriptWorld.global_free_flight_viewport
+				and ScriptWorld.global_free_flight_viewport(world)
 			if ff_viewport then
 				local cam = ScriptViewport.camera(ff_viewport)
 				if cam then
@@ -2133,8 +2187,17 @@ mod.orbit_set_center = function()
 		local physics_world = World.physics_world(world)
 		if physics_world then
 			local fwd = Quaternion.forward(rot)
-			local hit, hit_pos = PhysicsWorld.raycast(physics_world, pos, fwd, 50, "closest", "types", "statics",
-				"collision_filter", "filter_player_character_shooting_raycast_statics")
+			local hit, hit_pos = PhysicsWorld.raycast(
+				physics_world,
+				pos,
+				fwd,
+				50,
+				"closest",
+				"types",
+				"statics",
+				"collision_filter",
+				"filter_player_character_shooting_raycast_statics"
+			)
 			if hit then
 				center = hit_pos
 			end
@@ -2729,7 +2792,8 @@ mod.update = function(dt)
 		if center then
 			local target_mode = mod:get("orbit_target_mode") or "follow"
 			local is_char = (target_mode == "character" or target_mode == "follow")
-			local follow_rot = (target_mode == "follow") or (target_mode == "character" and mod:get("orbit_follow_rotation") == true)
+			local follow_rot = (target_mode == "follow")
+				or (target_mode == "character" and mod:get("orbit_follow_rotation") == true)
 			local unit = is_char and (_get_spectated_puppet_unit() or _get_own_character_unit())
 
 			if is_char and unit and (not mod._rig_forced_3p or mod._rig_forced_3p_unit ~= unit) then
@@ -2740,21 +2804,31 @@ mod.update = function(dt)
 			if is_char and dynamic_give and unit and Unit.alive(unit) then
 				local fp_ext = ScriptUnit.has_extension(unit, "first_person_system")
 				local default_h = (fp_ext and fp_ext._heights and fp_ext._heights.default) or 1.7
-				local cur_h = (fp_ext and fp_ext.extrapolated_character_height and fp_ext:extrapolated_character_height()) or default_h
+				local cur_h = (
+					fp_ext
+					and fp_ext.extrapolated_character_height
+					and fp_ext:extrapolated_character_height()
+				) or default_h
 				local raw_drop = math.max(0, default_h - cur_h)
 				local slide_give = mod:get("orbit_slide_give")
-				if slide_give == nil then slide_give = 0.5 end
+				if slide_give == nil then
+					slide_give = 0.5
+				end
 				local target_drop = raw_drop * slide_give
 				local drop_lerp = 1 - math.exp(-14.0 * dt)
-				mod._orbit_smooth_height_drop = (mod._orbit_smooth_height_drop or 0) + (target_drop - (mod._orbit_smooth_height_drop or 0)) * math.clamp(drop_lerp, 0, 1)
+				mod._orbit_smooth_height_drop = (mod._orbit_smooth_height_drop or 0)
+					+ (target_drop - (mod._orbit_smooth_height_drop or 0)) * math.clamp(drop_lerp, 0, 1)
 
 				local fp_rot = _get_unit_heading_rotation(unit)
 				local look_pitch = fp_rot and Quaternion.pitch(fp_rot) or 0
 				local pitch_give = mod:get("orbit_pitch_give")
-				if pitch_give == nil then pitch_give = 0.35 end
+				if pitch_give == nil then
+					pitch_give = 0.35
+				end
 				local target_pitch_deg = math.deg(look_pitch) * pitch_give
 				local pitch_lerp = 1 - math.exp(-12.0 * dt)
-				mod._orbit_smooth_pitch_give = (mod._orbit_smooth_pitch_give or 0) + (target_pitch_deg - (mod._orbit_smooth_pitch_give or 0)) * math.clamp(pitch_lerp, 0, 1)
+				mod._orbit_smooth_pitch_give = (mod._orbit_smooth_pitch_give or 0)
+					+ (target_pitch_deg - (mod._orbit_smooth_pitch_give or 0)) * math.clamp(pitch_lerp, 0, 1)
 			else
 				mod._orbit_smooth_height_drop = 0
 				mod._orbit_smooth_pitch_give = 0
@@ -2869,14 +2943,17 @@ mod.update = function(dt)
 		local world = _get_level_world()
 
 		if world then
-			local ff_viewport = ScriptWorld.global_free_flight_viewport and
-			ScriptWorld.global_free_flight_viewport(world)
+			local ff_viewport = ScriptWorld.global_free_flight_viewport
+				and ScriptWorld.global_free_flight_viewport(world)
 
 			if ff_viewport then
 				local cam = ScriptViewport.camera(ff_viewport)
 
 				if cam then
-					Camera.set_vertical_fov(cam, math.clamp(math.rad(65 + mod._fov_offset), math.rad(10), math.rad(150)))
+					Camera.set_vertical_fov(
+						cam,
+						math.clamp(math.rad(65 + mod._fov_offset), math.rad(10), math.rad(150))
+					)
 					mod._fov_applied = true
 				end
 			end
@@ -2885,8 +2962,8 @@ mod.update = function(dt)
 		local world = _get_level_world()
 
 		if world then
-			local ff_viewport = ScriptWorld.global_free_flight_viewport and
-			ScriptWorld.global_free_flight_viewport(world)
+			local ff_viewport = ScriptWorld.global_free_flight_viewport
+				and ScriptWorld.global_free_flight_viewport(world)
 
 			if ff_viewport then
 				local cam = ScriptViewport.camera(ff_viewport)
@@ -2993,9 +3070,16 @@ mod:hook("HumanUnitInput", "get", function(func, self, action, ...)
 		local menu_input_active = mod._menu_hovered
 
 		if not actions_allowed or menu_input_active then
-			if action == "action_one_pressed" or action == "action_one_hold" or action == "action_one_release"
-				or action == "action_two_pressed" or action == "action_two_hold" or action == "action_two_release"
-				or action == "weapon_reload" or action == "wield" then
+			if
+				action == "action_one_pressed"
+				or action == "action_one_hold"
+				or action == "action_one_release"
+				or action == "action_two_pressed"
+				or action == "action_two_hold"
+				or action == "action_two_release"
+				or action == "weapon_reload"
+				or action == "wield"
+			then
 				return false
 			end
 		end
@@ -3117,7 +3201,7 @@ local _ff_proxy_mt = {
 			end
 		end
 		return val
-	end
+	end,
 }
 setmetatable(_ff_input_proxy, _ff_proxy_mt)
 
@@ -3172,7 +3256,7 @@ local _player_proxy_mt = {
 			end
 		end
 		return val
-	end
+	end,
 }
 setmetatable(_player_input_proxy, _player_proxy_mt)
 
@@ -3205,7 +3289,9 @@ local function _wrap_player_input(input, dt)
 	return _player_input_proxy
 end
 
-mod:hook("DefaultPlayerOrientation", "pre_update",
+mod:hook(
+	"DefaultPlayerOrientation",
+	"pre_update",
 	function(func, self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
 		if input and mod:is_enabled() then
 			if mod._menu_open and (mod._camera_locked or mod._typing) then
@@ -3216,9 +3302,12 @@ mod:hook("DefaultPlayerOrientation", "pre_update",
 		end
 
 		return func(self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
-	end)
+	end
+)
 
-mod:hook("HubPlayerOrientation", "pre_update",
+mod:hook(
+	"HubPlayerOrientation",
+	"pre_update",
 	function(func, self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
 		if input and mod:is_enabled() then
 			if mod._menu_open and (mod._camera_locked or mod._typing) then
@@ -3229,7 +3318,8 @@ mod:hook("HubPlayerOrientation", "pre_update",
 		end
 
 		return func(self, main_t, main_dt, input, sensitivity_modifier, rotation_contraints)
-	end)
+	end
+)
 
 mod:hook("ConstantElementChat", "_handle_keyboard_input", function(func, self, ...)
 	if mod._typing then
@@ -3298,7 +3388,9 @@ mod:hook("PlayerUnitHologramExtension", "update", function(func, self, unit, dt,
 	return func(self, unit, dt, t)
 end)
 
-mod:hook("CameraManager", "_update_camera_properties",
+mod:hook(
+	"CameraManager",
+	"_update_camera_properties",
 	function(func, self, camera, shadow_cull_camera, camera_nodes, camera_data, viewport_name)
 		if mod:is_enabled() then
 			if mod._tripod_active and mod._tripod_pos and mod._tripod_rot then
@@ -3316,8 +3408,8 @@ mod:hook("CameraManager", "_update_camera_properties",
 			end
 
 			if mod._fov_offset and mod._fov_offset ~= 0 and camera_data.vertical_fov then
-				camera_data.vertical_fov = math.clamp(camera_data.vertical_fov + math.rad(mod._fov_offset), math.rad(10),
-					math.rad(150))
+				camera_data.vertical_fov =
+					math.clamp(camera_data.vertical_fov + math.rad(mod._fov_offset), math.rad(10), math.rad(150))
 			end
 		end
 
@@ -3335,9 +3427,12 @@ mod:hook("CameraManager", "_update_camera_properties",
 				Camera.set_custom_vertical_fov(camera, locked_fov_rad)
 			end
 		end
-	end)
+	end
+)
 
-mod:hook_safe("CameraManager", "shading_callback",
+mod:hook_safe(
+	"CameraManager",
+	"shading_callback",
 	function(self, world, shading_env, viewport, default_shading_environment_resource)
 		if self._world ~= world then
 			return
@@ -3388,7 +3483,8 @@ mod:hook_safe("CameraManager", "shading_callback",
 		if need_apply then
 			ShadingEnvironment.apply(shading_env)
 		end
-	end)
+	end
+)
 
 mod:hook("FreeFlightManager", "camera", function(func, self, camera_id)
 	local data = self._free_flight_cameras and self._free_flight_cameras[camera_id]
@@ -3396,7 +3492,9 @@ mod:hook("FreeFlightManager", "camera", function(func, self, camera_id)
 		return false
 	end
 
-	local world = Managers.world and Managers.world:has_world(data.viewport_world_name) and Managers.world:world(data.viewport_world_name)
+	local world = Managers.world
+		and Managers.world:has_world(data.viewport_world_name)
+		and Managers.world:world(data.viewport_world_name)
 	if not world then
 		data.active = false
 		data.viewport_world_name = nil
@@ -3421,7 +3519,9 @@ mod:hook("FreeFlightManager", "_update_camera", function(func, self, input, dt, 
 		return
 	end
 
-	local world = Managers.world and Managers.world:has_world(camera_data.viewport_world_name) and Managers.world:world(camera_data.viewport_world_name)
+	local world = Managers.world
+		and Managers.world:has_world(camera_data.viewport_world_name)
+		and Managers.world:world(camera_data.viewport_world_name)
 	if not world then
 		camera_data.active = false
 		camera_data.viewport_world_name = nil
@@ -3484,7 +3584,12 @@ mod:hook("BloodManager", "play_screen_space_blood", function(func, self, fx_exte
 end)
 
 mod:hook("PlayerUnitFxExtension", "spawn_exclusive_particle", function(func, self, particle_name, ...)
-	if mod:is_enabled() and mod._screen_effects_hidden and particle_name and string.find(particle_name, "screenspace") then
+	if
+		mod:is_enabled()
+		and mod._screen_effects_hidden
+		and particle_name
+		and string.find(particle_name, "screenspace")
+	then
 		return
 	end
 
@@ -3523,27 +3628,31 @@ mod:hook("MoodHandler", "_spawn_particles", function(func, self, particle_name)
 	return func(self, particle_name)
 end)
 
-mod:hook("MoodHandler", "_update_particles", function(func, self, added_moods, removing_moods, removed_moods, moods_data)
-	if mod:is_enabled() and mod._screen_effects_hidden then
-		local world = self._world
-		local looping_particles = self._looping_particles
-		if world and looping_particles then
-			for mood_type, particles in pairs(looping_particles) do
-				for i = #particles, 1, -1 do
-					local particle_id = particles[i]
-					if particle_id then
-						World.destroy_particles(world, particle_id)
+mod:hook(
+	"MoodHandler",
+	"_update_particles",
+	function(func, self, added_moods, removing_moods, removed_moods, moods_data)
+		if mod:is_enabled() and mod._screen_effects_hidden then
+			local world = self._world
+			local looping_particles = self._looping_particles
+			if world and looping_particles then
+				for mood_type, particles in pairs(looping_particles) do
+					for i = #particles, 1, -1 do
+						local particle_id = particles[i]
+						if particle_id then
+							World.destroy_particles(world, particle_id)
+						end
+						particles[i] = nil
 					end
-					particles[i] = nil
 				end
 			end
+
+			return
 		end
 
-		return
+		return func(self, added_moods, removing_moods, removed_moods, moods_data)
 	end
-
-	return func(self, added_moods, removing_moods, removed_moods, moods_data)
-end)
+)
 
 mod.on_setting_changed = function(setting_id)
 	if setting_id == "freeze_time" then
@@ -3617,12 +3726,14 @@ mod.on_setting_changed = function(setting_id)
 		mod._fov_offset = mod:get("camera_fov_offset") or 0
 		local world = _get_level_world()
 		if world then
-			local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
+			local ff_viewport = ScriptWorld.global_free_flight_viewport
+				and ScriptWorld.global_free_flight_viewport(world)
 			if ff_viewport then
 				local cam = ScriptViewport.camera(ff_viewport)
 				if cam then
 					local default_fov_rad = math.rad(65)
-					local current_fov = math.clamp(default_fov_rad + math.rad(mod._fov_offset), math.rad(5), math.rad(125))
+					local current_fov =
+						math.clamp(default_fov_rad + math.rad(mod._fov_offset), math.rad(5), math.rad(125))
 					Camera.set_vertical_fov(cam, current_fov)
 				end
 			end
@@ -3685,10 +3796,15 @@ mod.on_setting_changed = function(setting_id)
 		end
 	end
 
-	if setting_id == "light_intensity" or setting_id == "light_radius"
-		or setting_id == "spot_angle" or setting_id == "light_color"
-		or setting_id == "light_type" or setting_id == "cast_shadows"
-		or setting_id == "exposure_compensation" then
+	if
+		setting_id == "light_intensity"
+		or setting_id == "light_radius"
+		or setting_id == "spot_angle"
+		or setting_id == "light_color"
+		or setting_id == "light_type"
+		or setting_id == "cast_shadows"
+		or setting_id == "exposure_compensation"
+	then
 		mod.update_all_lights()
 	end
 end
@@ -3884,7 +4000,6 @@ local function _setup_replays_integration()
 		end)
 	end
 
-
 	_hook_play("toggle_pause", function(func)
 		func()
 		if mod:is_enabled() then
@@ -3952,21 +4067,29 @@ mod.on_all_mods_loaded = function()
 			end
 			return func(ext, unit)
 		end)
-		mod:hook(PlayerOutlines, "_update_hologram", function(func, unit, t, is_local_player_unit, player_outlines_enabled, is_in_hub)
-			if mod:is_enabled() and mod._hide_outlines then
-				if PlayerOutlines._remove_hologram then
-					PlayerOutlines._remove_hologram(unit)
+		mod:hook(
+			PlayerOutlines,
+			"_update_hologram",
+			function(func, unit, t, is_local_player_unit, player_outlines_enabled, is_in_hub)
+				if mod:is_enabled() and mod._hide_outlines then
+					if PlayerOutlines._remove_hologram then
+						PlayerOutlines._remove_hologram(unit)
+					end
+					return
 				end
-				return
+				return func(unit, t, is_local_player_unit, player_outlines_enabled, is_in_hub)
 			end
-			return func(unit, t, is_local_player_unit, player_outlines_enabled, is_in_hub)
-		end)
-		mod:hook(PlayerOutlines, "apply_outline_color_to_equipment_slots", function(func, unit, outline_color, material_layers)
-			if mod:is_enabled() and mod._hide_outlines then
-				return
+		)
+		mod:hook(
+			PlayerOutlines,
+			"apply_outline_color_to_equipment_slots",
+			function(func, unit, outline_color, material_layers)
+				if mod:is_enabled() and mod._hide_outlines then
+					return
+				end
+				return func(unit, outline_color, material_layers)
 			end
-			return func(unit, outline_color, material_layers)
-		end)
+		)
 	end
 end
 

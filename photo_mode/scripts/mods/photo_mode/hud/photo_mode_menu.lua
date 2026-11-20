@@ -153,8 +153,9 @@ end
 
 local function _button(ctx, id, label, x, y, w, h, is_active, on_click, custom_colors)
 	local is_hover = ctx.cx and _point_in_rect(ctx.cx, ctx.cy, x, y, w, h)
-	local is_pressed = is_hover and (ctx.left_hold or ctx.left_pressed) and
-	(ctx.pressed_id == id or ctx.pressed_id == nil)
+	local is_pressed = is_hover
+		and (ctx.left_hold or ctx.left_pressed)
+		and (ctx.pressed_id == id or ctx.pressed_id == nil)
 	local colors = M.COLORS
 
 	local bg_col, border_col, text_col
@@ -190,8 +191,8 @@ end
 
 local function _color_swatch_button(ctx, id, color, x, y, w, h, is_selected, on_click)
 	local is_hover = ctx.cx and _point_in_rect(ctx.cx, ctx.cy, x, y, w, h)
-	local border_col = is_selected and { 255, 255, 255, 255 } or
-	(is_hover and { 255, 210, 235, 255 } or { 255, 55, 70, 85 })
+	local border_col = is_selected and { 255, 255, 255, 255 }
+		or (is_hover and { 255, 210, 235, 255 } or { 255, 55, 70, 85 })
 	local border_w = is_selected and 2 or 1
 
 	_add_panel(ctx.items, x, y, w, h, color, border_col, border_w, 2)
@@ -204,8 +205,23 @@ local function _color_swatch_button(ctx, id, color, x, y, w, h, is_selected, on_
 	end
 end
 
-local function _slider(ctx, id, label, val_text, x, y, w, h, min_v, max_v, cur_val, step, decimals, on_change,
-					   custom_fill)
+local function _slider(
+	ctx,
+	id,
+	label,
+	val_text,
+	x,
+	y,
+	w,
+	h,
+	min_v,
+	max_v,
+	cur_val,
+	step,
+	decimals,
+	on_change,
+	custom_fill
+)
 	local track_y = y + 17
 	local track_h = 10
 	local is_hover = ctx.cx and _point_in_rect(ctx.cx, ctx.cy, x, y, w, h)
@@ -268,11 +284,25 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 	y = y + 24
 
 	local fov_offset = mod._fov_offset or mod:get("camera_fov_offset") or 0
-	_slider(ctx, "camera_fov_offset", "Camera FOV Offset", string.format("%+d°", fov_offset), cx_start, y, slider_w, 30,
-		-60, 60, fov_offset, 1, 0, function(v)
-		mod:set("camera_fov_offset", v, true)
-		mod._fov_offset = v
-	end)
+	_slider(
+		ctx,
+		"camera_fov_offset",
+		"Camera FOV Offset",
+		string.format("%+d°", fov_offset),
+		cx_start,
+		y,
+		slider_w,
+		30,
+		-60,
+		60,
+		fov_offset,
+		1,
+		0,
+		function(v)
+			mod:set("camera_fov_offset", v, true)
+			mod._fov_offset = v
+		end
+	)
 	_button(ctx, "reset_fov", "Reset", cx_start + slider_w + 10, y + 14, btn_w, 20, false, function()
 		mod.reset_fov()
 	end)
@@ -288,11 +318,25 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 	y = y + 24
 
 	local tilt = mod._tilt_angle or mod:get("camera_tilt") or 0
-	_slider(ctx, "camera_tilt", "Dutch Angle / Tilt", string.format("%+d°", tilt), cx_start, y, slider_w, 30, -45, 45,
-		tilt, 1, 0, function(v)
-		mod:set("camera_tilt", v, true)
-		mod._tilt_angle = v
-	end)
+	_slider(
+		ctx,
+		"camera_tilt",
+		"Dutch Angle / Tilt",
+		string.format("%+d°", tilt),
+		cx_start,
+		y,
+		slider_w,
+		30,
+		-45,
+		45,
+		tilt,
+		1,
+		0,
+		function(v)
+			mod:set("camera_tilt", v, true)
+			mod._tilt_angle = v
+		end
+	)
 	_button(ctx, "reset_tilt", "Reset", cx_start + slider_w + 10, y + 14, btn_w, 20, false, function()
 		mod.reset_tilt()
 	end)
@@ -302,58 +346,146 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 	y = y + 24
 
 	local dof_active = mod._dof_active
-	_button(ctx, "toggle_dof", dof_active and "DEPTH OF FIELD: ACTIVE" or "DEPTH OF FIELD: OFF", cx_start, y, w, 28,
-		dof_active, function()
-		mod.toggle_dof()
-	end)
+	_button(
+		ctx,
+		"toggle_dof",
+		dof_active and "DEPTH OF FIELD: ACTIVE" or "DEPTH OF FIELD: OFF",
+		cx_start,
+		y,
+		w,
+		28,
+		dof_active,
+		function()
+			mod.toggle_dof()
+		end
+	)
 	y = y + 34
 
 	local dof_dist = mod._dof_distance or mod:get("dof_focal_distance") or 3.0
-	_slider(ctx, "dof_focal_distance", "Focal Distance", string.format("%.1f m", dof_dist), cx_start, y, w, 30, 0.5, 50.0,
-		dof_dist, 0.5, 1, function(v)
-		mod:set("dof_focal_distance", v, true)
-		mod._dof_distance = v
-	end)
+	_slider(
+		ctx,
+		"dof_focal_distance",
+		"Focal Distance",
+		string.format("%.1f m", dof_dist),
+		cx_start,
+		y,
+		w,
+		30,
+		0.5,
+		50.0,
+		dof_dist,
+		0.5,
+		1,
+		function(v)
+			mod:set("dof_focal_distance", v, true)
+			mod._dof_distance = v
+		end
+	)
 	y = y + 32
 
 	local dof_region = mod:get("dof_focal_region") or 4.0
-	_slider(ctx, "dof_focal_region", "Focal Region Depth", string.format("%.1f m", dof_region), cx_start, y, w, 30, 0.5,
-		20.0, dof_region, 0.5, 1, function(v)
-		mod:set("dof_focal_region", v, true)
-	end)
+	_slider(
+		ctx,
+		"dof_focal_region",
+		"Focal Region Depth",
+		string.format("%.1f m", dof_region),
+		cx_start,
+		y,
+		w,
+		30,
+		0.5,
+		20.0,
+		dof_region,
+		0.5,
+		1,
+		function(v)
+			mod:set("dof_focal_region", v, true)
+		end
+	)
 	y = y + 32
 
 	local dof_blur = mod:get("dof_blur_amount") or 1.0
-	_slider(ctx, "dof_blur_amount", "Background Blur Amount", string.format("%.1f", dof_blur), cx_start, y, w, 30, 0.1,
-		1.0, dof_blur, 0.1, 1, function(v)
-		mod:set("dof_blur_amount", v, true)
-	end)
+	_slider(
+		ctx,
+		"dof_blur_amount",
+		"Background Blur Amount",
+		string.format("%.1f", dof_blur),
+		cx_start,
+		y,
+		w,
+		30,
+		0.1,
+		1.0,
+		dof_blur,
+		0.1,
+		1,
+		function(v)
+			mod:set("dof_blur_amount", v, true)
+		end
+	)
 	y = y + 34
 
 	_section_header(ctx.items, "MOUSE LOOK SMOOTHING", cx_start, y, w)
 	y = y + 24
 
 	local mouse_smoothing = mod._mouse_smoothing
-	_button(ctx, "toggle_mouse_smoothing", mouse_smoothing and "SMOOTHING: ON" or "SMOOTHING: OFF", cx_start, y, w, 28,
-		mouse_smoothing, function()
+	_button(
+		ctx,
+		"toggle_mouse_smoothing",
+		mouse_smoothing and "SMOOTHING: ON" or "SMOOTHING: OFF",
+		cx_start,
+		y,
+		w,
+		28,
+		mouse_smoothing,
+		function()
 			mod.toggle_mouse_smoothing()
-		end)
+		end
+	)
 	y = y + 34
 
 	local half_w = math.floor((w - 10) / 2)
 	local smoothing_amt = mod._mouse_smoothing_amount or mod:get("mouse_smoothing_amount") or 0.65
-	_slider(ctx, "mouse_smoothing_amount", "Smoothing Strength", string.format("%d%%", math.floor(smoothing_amt * 100 + 0.5)),
-		cx_start, y, half_w, 30, 0.10, 0.95, smoothing_amt, 0.05, 2, function(v)
+	_slider(
+		ctx,
+		"mouse_smoothing_amount",
+		"Smoothing Strength",
+		string.format("%d%%", math.floor(smoothing_amt * 100 + 0.5)),
+		cx_start,
+		y,
+		half_w,
+		30,
+		0.10,
+		0.95,
+		smoothing_amt,
+		0.05,
+		2,
+		function(v)
 			mod:set("mouse_smoothing_amount", v, true)
 			mod._mouse_smoothing_amount = v
-		end)
+		end
+	)
 
 	local smoothing_spd = mod._mouse_smoothing_speed or mod:get("mouse_smoothing_speed") or 1.0
-	_slider(ctx, "mouse_smoothing_speed", "Look Speed", string.format("%d%%", math.floor(smoothing_spd * 100 + 0.5)),
-		cx_start + half_w + 10, y, half_w, 30, 0.10, 3.00, smoothing_spd, 0.05, 2, function(v)
+	_slider(
+		ctx,
+		"mouse_smoothing_speed",
+		"Look Speed",
+		string.format("%d%%", math.floor(smoothing_spd * 100 + 0.5)),
+		cx_start + half_w + 10,
+		y,
+		half_w,
+		30,
+		0.10,
+		3.00,
+		smoothing_spd,
+		0.05,
+		2,
+		function(v)
 			mod:set("mouse_smoothing_speed", v, true)
 			mod._mouse_smoothing_speed = v
-		end)
+		end
+	)
 end
 
 local function _build_time_hud_tab(ctx, cx_start, cy_start, w)
@@ -364,68 +496,154 @@ local function _build_time_hud_tab(ctx, cx_start, cy_start, w)
 	y = y + 24
 
 	local time_frozen = mod._time_frozen
-	_button(ctx, "freeze_time", time_frozen and "TIME: FROZEN" or "FREEZE TIME", cx_start, y, half_w, 30, time_frozen,
+	_button(
+		ctx,
+		"freeze_time",
+		time_frozen and "TIME: FROZEN" or "FREEZE TIME",
+		cx_start,
+		y,
+		half_w,
+		30,
+		time_frozen,
 		function()
 			mod.toggle_freeze_time()
-		end)
+		end
+	)
 	_button(ctx, "step_frame", "Step 1 Frame  >", cx_start + half_w + 10, y, half_w, 30, false, function()
 		mod.step_frame()
 	end)
 	y = y + 36
 
 	local slomo_active = mod._slomo_active
-	_button(ctx, "toggle_slomo", slomo_active and "SLOW-MO: ON" or "SLOW-MO: OFF", cx_start, y, half_w, 30, slomo_active,
+	_button(
+		ctx,
+		"toggle_slomo",
+		slomo_active and "SLOW-MO: ON" or "SLOW-MO: OFF",
+		cx_start,
+		y,
+		half_w,
+		30,
+		slomo_active,
 		function()
 			mod.toggle_slomo()
-		end)
+		end
+	)
 
 	local slomo_scale = mod:get("slomo_scale") or 0.10
-	_slider(ctx, "slomo_scale", "Slow-Mo Speed", string.format("%d%%", math.floor(slomo_scale * 100 + 0.5)),
-		cx_start + half_w + 10, y, half_w, 30, 0.01, 1.00, slomo_scale, 0.01, 2, function(v)
-		mod:set("slomo_scale", v, true)
-	end)
+	_slider(
+		ctx,
+		"slomo_scale",
+		"Slow-Mo Speed",
+		string.format("%d%%", math.floor(slomo_scale * 100 + 0.5)),
+		cx_start + half_w + 10,
+		y,
+		half_w,
+		30,
+		0.01,
+		1.00,
+		slomo_scale,
+		0.01,
+		2,
+		function(v)
+			mod:set("slomo_scale", v, true)
+		end
+	)
 	y = y + 38
 
 	_section_header(ctx.items, "HUD & SCREEN VISIBILITY", cx_start, y, w)
 	y = y + 24
 
 	local hud_hidden = mod._hud_hidden
-	_button(ctx, "toggle_hide_hud", hud_hidden and "HUD: HIDDEN" or "HIDE HUD", cx_start, y, half_w, 30, hud_hidden,
+	_button(
+		ctx,
+		"toggle_hide_hud",
+		hud_hidden and "HUD: HIDDEN" or "HIDE HUD",
+		cx_start,
+		y,
+		half_w,
+		30,
+		hud_hidden,
 		function()
 			mod.toggle_hide_hud()
-		end)
+		end
+	)
 
 	local chat_hidden = mod._chat_hidden
-	_button(ctx, "toggle_hide_chat", chat_hidden and "CHAT: HIDDEN" or "HIDE CHAT", cx_start + half_w + 10, y, half_w, 30,
-		chat_hidden, function()
-		mod.toggle_hide_chat()
-	end)
+	_button(
+		ctx,
+		"toggle_hide_chat",
+		chat_hidden and "CHAT: HIDDEN" or "HIDE CHAT",
+		cx_start + half_w + 10,
+		y,
+		half_w,
+		30,
+		chat_hidden,
+		function()
+			mod.toggle_hide_chat()
+		end
+	)
 	y = y + 36
 
 	local arms_hidden = mod._arms_hidden
-	_button(ctx, "toggle_hide_arms", arms_hidden and "ARMS: HIDDEN" or "HIDE ARMS", cx_start, y, half_w, 30, arms_hidden,
+	_button(
+		ctx,
+		"toggle_hide_arms",
+		arms_hidden and "ARMS: HIDDEN" or "HIDE ARMS",
+		cx_start,
+		y,
+		half_w,
+		30,
+		arms_hidden,
 		function()
 			mod.toggle_hide_arms()
-		end)
+		end
+	)
 
 	local fx_hidden = mod._screen_effects_hidden
-	_button(ctx, "toggle_hide_effects", fx_hidden and "FX: HIDDEN" or "SCREEN EFFECTS", cx_start + half_w + 10, y, half_w,
-		30, fx_hidden, function()
-		mod.toggle_hide_screen_effects()
-	end)
+	_button(
+		ctx,
+		"toggle_hide_effects",
+		fx_hidden and "FX: HIDDEN" or "SCREEN EFFECTS",
+		cx_start + half_w + 10,
+		y,
+		half_w,
+		30,
+		fx_hidden,
+		function()
+			mod.toggle_hide_screen_effects()
+		end
+	)
 	y = y + 36
 
 	local outlines_hidden = mod._hide_outlines
-	_button(ctx, "toggle_hide_outlines", outlines_hidden and "OUTLINES: HIDDEN" or "HIDE OUTLINES", cx_start, y, half_w,
-		30, outlines_hidden, function()
-		mod.toggle_hide_outlines()
-	end)
+	_button(
+		ctx,
+		"toggle_hide_outlines",
+		outlines_hidden and "OUTLINES: HIDDEN" or "HIDE OUTLINES",
+		cx_start,
+		y,
+		half_w,
+		30,
+		outlines_hidden,
+		function()
+			mod.toggle_hide_outlines()
+		end
+	)
 
 	local show_chat = mod:get("show_chat_messages") ~= false
-	_button(ctx, "toggle_chat_messages", show_chat and "CHAT LOGS: ON" or "CHAT LOGS: OFF", cx_start + half_w + 10, y,
-		half_w, 30, show_chat, function()
-		mod:set("show_chat_messages", not show_chat, true)
-	end)
+	_button(
+		ctx,
+		"toggle_chat_messages",
+		show_chat and "CHAT LOGS: ON" or "CHAT LOGS: OFF",
+		cx_start + half_w + 10,
+		y,
+		half_w,
+		30,
+		show_chat,
+		function()
+			mod:set("show_chat_messages", not show_chat, true)
+		end
+	)
 end
 
 local function _build_lighting_tab(ctx, cx_start, cy_start, w)
@@ -463,14 +681,23 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 		end
 	end)
 
-	local sel_label = num_lights > 0 and string.format("Editing: #%d of %d", sel_idx, num_lights) or
-	"No Placed Lights (Editing Next / Lantern)"
-	_button(ctx, "selected_light_display", sel_label, cx_start + arrow_w + gap, y, selector_mid_w, 28, num_lights > 0,
+	local sel_label = num_lights > 0 and string.format("Editing: #%d of %d", sel_idx, num_lights)
+		or "No Placed Lights (Editing Next / Lantern)"
+	_button(
+		ctx,
+		"selected_light_display",
+		sel_label,
+		cx_start + arrow_w + gap,
+		y,
+		selector_mid_w,
+		28,
+		num_lights > 0,
 		function()
 			if num_lights > 0 and mod.select_next_light then
 				mod.select_next_light()
 			end
-		end)
+		end
+	)
 
 	_button(ctx, "next_light", ">", cx_start + arrow_w + gap + selector_mid_w + gap, y, arrow_w, 28, false, function()
 		if mod.select_next_light then
@@ -478,61 +705,120 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 		end
 	end)
 
-	_button(ctx, "delete_selected_light", "Delete", cx_start + arrow_w + gap + selector_mid_w + gap + arrow_w + gap, y,
-		del_btn_w, 28, false, function()
-		if mod.delete_selected_light then
-			mod.delete_selected_light()
+	_button(
+		ctx,
+		"delete_selected_light",
+		"Delete",
+		cx_start + arrow_w + gap + selector_mid_w + gap + arrow_w + gap,
+		y,
+		del_btn_w,
+		28,
+		false,
+		function()
+			if mod.delete_selected_light then
+				mod.delete_selected_light()
+			end
 		end
-	end)
+	)
 	y = y + 34
 
 	local half_btn_w = math.floor((w - 10) / 2)
 	local lantern_active = mod._lantern_active
-	_button(ctx, "toggle_lantern", lantern_active and "Lantern: ON" or "Lantern: OFF", cx_start, y, third_w, 32,
-		lantern_active, function()
-		mod.toggle_lantern()
-	end)
+	_button(
+		ctx,
+		"toggle_lantern",
+		lantern_active and "Lantern: ON" or "Lantern: OFF",
+		cx_start,
+		y,
+		third_w,
+		32,
+		lantern_active,
+		function()
+			mod.toggle_lantern()
+		end
+	)
 
 	local light_type = mod:get("light_type") or "spot"
-	_button(ctx, "cycle_light_type", light_type == "omni" and "Type: OMNI" or "Type: SPOT", cx_start + third_w + 10, y,
-		third_w, 32, false, function()
-		local next_type = light_type == "spot" and "omni" or "spot"
-		mod:set("light_type", next_type, true)
-		if mod.update_all_lights then
-			mod.update_all_lights()
+	_button(
+		ctx,
+		"cycle_light_type",
+		light_type == "omni" and "Type: OMNI" or "Type: SPOT",
+		cx_start + third_w + 10,
+		y,
+		third_w,
+		32,
+		false,
+		function()
+			local next_type = light_type == "spot" and "omni" or "spot"
+			mod:set("light_type", next_type, true)
+			if mod.update_all_lights then
+				mod.update_all_lights()
+			end
 		end
-	end)
+	)
 
 	local cast_shadows = mod:get("cast_shadows") ~= false
-	_button(ctx, "toggle_shadows", cast_shadows and "Shadows: ON" or "Shadows: OFF", cx_start + (third_w + 10) * 2, y,
-		third_w, 32, cast_shadows, function()
-		mod:set("cast_shadows", not cast_shadows, true)
-		if mod.update_all_lights then
-			mod.update_all_lights()
+	_button(
+		ctx,
+		"toggle_shadows",
+		cast_shadows and "Shadows: ON" or "Shadows: OFF",
+		cx_start + (third_w + 10) * 2,
+		y,
+		third_w,
+		32,
+		cast_shadows,
+		function()
+			mod:set("cast_shadows", not cast_shadows, true)
+			if mod.update_all_lights then
+				mod.update_all_lights()
+			end
 		end
-	end)
+	)
 	y = y + 42
 
 	_section_header(ctx.items, "MAP LIGHTS & EXPOSURE", cx_start, y, w)
 	y = y + 24
 
 	local map_lights_on = not mod._blackout_active
-	_button(ctx, "toggle_map_lights", map_lights_on and "Map Lights: ON" or "Map Lights: OFF", cx_start, y,
-		w, 30, map_lights_on, function()
-		mod.toggle_map_lights()
-	end)
+	_button(
+		ctx,
+		"toggle_map_lights",
+		map_lights_on and "Map Lights: ON" or "Map Lights: OFF",
+		cx_start,
+		y,
+		w,
+		30,
+		map_lights_on,
+		function()
+			mod.toggle_map_lights()
+		end
+	)
 	y = y + 36
 
 	local exp_val = mod:get("exposure_compensation") or 0.0
 	local exp_str = string.format("%+.1f EV", exp_val)
 	local reset_w = 64
-	_slider(ctx, "exposure_compensation", "Scene Exposure", exp_str, cx_start, y,
-		w - reset_w - 10, 28, -11.0, 3.0, exp_val, 0.5, 1, function(v)
-		mod:set("exposure_compensation", v, true)
-		if mod.update_all_lights then
-			mod.update_all_lights()
+	_slider(
+		ctx,
+		"exposure_compensation",
+		"Scene Exposure",
+		exp_str,
+		cx_start,
+		y,
+		w - reset_w - 10,
+		28,
+		-11.0,
+		3.0,
+		exp_val,
+		0.5,
+		1,
+		function(v)
+			mod:set("exposure_compensation", v, true)
+			if mod.update_all_lights then
+				mod.update_all_lights()
+			end
 		end
-	end)
+	)
 	_button(ctx, "reset_exposure", "Reset", cx_start + w - reset_w, y + 14, reset_w, 20, false, function()
 		mod:set("exposure_compensation", 0.0, true)
 		if mod.update_all_lights then
@@ -541,40 +827,82 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	end)
 	y = y + 40
 
-	local header_title = num_lights > 0 and string.format("LIGHT PROPERTIES (LIGHT #%d)", sel_idx) or
-	"LIGHT PROPERTIES (NEXT LIGHT / LANTERN)"
+	local header_title = num_lights > 0 and string.format("LIGHT PROPERTIES (LIGHT #%d)", sel_idx)
+		or "LIGHT PROPERTIES (NEXT LIGHT / LANTERN)"
 	_section_header(ctx.items, header_title, cx_start, y, w)
 	y = y + 24
 
 	local intensity = mod:get("light_intensity") or 100
-	_slider(ctx, "light_intensity", "Light Intensity", tostring(math.floor(intensity + 0.5)), cx_start, y, w, 28, 10, 300,
-		intensity, 5, 0, function(v)
-		mod:set("light_intensity", v, true)
-		if mod.update_all_lights then
-			mod.update_all_lights()
+	_slider(
+		ctx,
+		"light_intensity",
+		"Light Intensity",
+		tostring(math.floor(intensity + 0.5)),
+		cx_start,
+		y,
+		w,
+		28,
+		10,
+		300,
+		intensity,
+		5,
+		0,
+		function(v)
+			mod:set("light_intensity", v, true)
+			if mod.update_all_lights then
+				mod.update_all_lights()
+			end
 		end
-	end)
+	)
 	y = y + 32
 
 	local radius = mod:get("light_radius") or 20
 	local radius_fmt = radius < 2 and string.format("%.1f m", radius) or string.format("%d m", math.floor(radius + 0.5))
-	_slider(ctx, "light_radius", "Light Radius / Falloff", radius_fmt, cx_start, y,
-		w, 28, 0.5, 100, radius, 0.5, 1, function(v)
-		mod:set("light_radius", v, true)
-		if mod.update_all_lights then
-			mod.update_all_lights()
+	_slider(
+		ctx,
+		"light_radius",
+		"Light Radius / Falloff",
+		radius_fmt,
+		cx_start,
+		y,
+		w,
+		28,
+		0.5,
+		100,
+		radius,
+		0.5,
+		1,
+		function(v)
+			mod:set("light_radius", v, true)
+			if mod.update_all_lights then
+				mod.update_all_lights()
+			end
 		end
-	end)
+	)
 	y = y + 32
 
 	local spot_angle = mod:get("spot_angle") or 45
-	_slider(ctx, "spot_angle", "Spotlight Cone Angle", string.format("%d°", math.floor(spot_angle + 0.5)), cx_start, y, w,
-		28, 15, 90, spot_angle, 5, 0, function(v)
-		mod:set("spot_angle", v, true)
-		if mod.update_all_lights then
-			mod.update_all_lights()
+	_slider(
+		ctx,
+		"spot_angle",
+		"Spotlight Cone Angle",
+		string.format("%d°", math.floor(spot_angle + 0.5)),
+		cx_start,
+		y,
+		w,
+		28,
+		15,
+		90,
+		spot_angle,
+		5,
+		0,
+		function(v)
+			mod:set("spot_angle", v, true)
+			if mod.update_all_lights then
+				mod.update_all_lights()
+			end
 		end
-	end)
+	)
 	y = y + 36
 
 	local cur_color = mod:get("light_color") or { 255, 255, 245, 220 }
@@ -587,8 +915,18 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	_add_panel(ctx.items, cx_start, y, swatch_w, swatch_h, { 255, cur_r, cur_g, cur_b }, { 255, 220, 235, 245 }, 1, 3)
 
 	_add_text(ctx.items, "Light Color", cx_start + swatch_w + 10, y + 4, 90, 16, 13, colors.title_text, "left", 2)
-	_add_text(ctx.items, string.format("RGB: %d, %d, %d", cur_r, cur_g, cur_b), cx_start + swatch_w + 105, y + 4, 160, 16,
-		12, colors.title_hint, "left", 2)
+	_add_text(
+		ctx.items,
+		string.format("RGB: %d, %d, %d", cur_r, cur_g, cur_b),
+		cx_start + swatch_w + 105,
+		y + 4,
+		160,
+		16,
+		12,
+		colors.title_hint,
+		"left",
+		2
+	)
 
 	local reset_btn_w = 64
 	_button(ctx, "reset_light_color", "Reset", cx_start + w - reset_btn_w, y + 2, reset_btn_w, 20, false, function()
@@ -600,14 +938,14 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	y = y + 30
 
 	local presets = {
-		{ name = "Warm",   color = { 255, 255, 195, 120 } },
-		{ name = "White",  color = { 255, 255, 250, 240 } },
-		{ name = "Day",    color = { 255, 210, 230, 255 } },
-		{ name = "Cold",   color = { 255, 130, 180, 255 } },
-		{ name = "Amber",  color = { 255, 255, 140, 25 } },
-		{ name = "Red",    color = { 255, 255, 45, 35 } },
-		{ name = "Green",  color = { 255, 45, 255, 75 } },
-		{ name = "Cyan",   color = { 255, 40, 230, 255 } },
+		{ name = "Warm", color = { 255, 255, 195, 120 } },
+		{ name = "White", color = { 255, 255, 250, 240 } },
+		{ name = "Day", color = { 255, 210, 230, 255 } },
+		{ name = "Cold", color = { 255, 130, 180, 255 } },
+		{ name = "Amber", color = { 255, 255, 140, 25 } },
+		{ name = "Red", color = { 255, 255, 45, 35 } },
+		{ name = "Green", color = { 255, 45, 255, 75 } },
+		{ name = "Cyan", color = { 255, 40, 230, 255 } },
 		{ name = "Violet", color = { 255, 210, 60, 255 } },
 	}
 
@@ -619,8 +957,9 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	for i = 1, p_count do
 		local p = presets[i]
 		local px = cx_start + (i - 1) * (p_w + p_gap)
-		local is_sel = math.abs(cur_r - p.color[2]) <= 3 and math.abs(cur_g - p.color[3]) <= 3 and
-		math.abs(cur_b - p.color[4]) <= 3
+		local is_sel = math.abs(cur_r - p.color[2]) <= 3
+			and math.abs(cur_g - p.color[3]) <= 3
+			and math.abs(cur_b - p.color[4]) <= 3
 
 		_color_swatch_button(ctx, "preset_col_" .. i, p.color, px, y, p_w, p_h, is_sel, function()
 			mod:set("light_color", { 255, p.color[2], p.color[3], p.color[4] }, true)
@@ -664,16 +1003,34 @@ local function _build_rigs_dolly(ctx, cx_start, cy_start, w)
 	y = y + 24
 
 	local tripod_active = mod._tripod_active
-	_button(ctx, "toggle_tripod", tripod_active and "TRIPOD: LOCKED" or "TRIPOD: OFF", cx_start, y, half_w, 30,
-		tripod_active, function()
-		mod.toggle_tripod()
-	end)
+	_button(
+		ctx,
+		"toggle_tripod",
+		tripod_active and "TRIPOD: LOCKED" or "TRIPOD: OFF",
+		cx_start,
+		y,
+		half_w,
+		30,
+		tripod_active,
+		function()
+			mod.toggle_tripod()
+		end
+	)
 
 	local dolly_active = mod._dolly_active
-	_button(ctx, "toggle_dolly", dolly_active and "DOLLY: ACTIVE" or "DOLLY: OFF", cx_start + half_w + 10, y, half_w, 30,
-		dolly_active, function()
-		mod.toggle_dolly()
-	end)
+	_button(
+		ctx,
+		"toggle_dolly",
+		dolly_active and "DOLLY: ACTIVE" or "DOLLY: OFF",
+		cx_start + half_w + 10,
+		y,
+		half_w,
+		30,
+		dolly_active,
+		function()
+			mod.toggle_dolly()
+		end
+	)
 	y = y + 36
 
 	local num_dolly = #mod._dolly_points
@@ -709,24 +1066,55 @@ local function _build_rigs_dolly(ctx, cx_start, cy_start, w)
 
 	local cur_pt = (num_dolly > 0 and mod._dolly_points[sel_dolly_idx]) or nil
 	local pt_name = cur_pt and cur_pt.name or (sel_dolly_idx > 0 and tostring(sel_dolly_idx) or "-")
-	local sel_dolly_label = num_dolly > 0 and string.format("Point %s (%d of %d)", pt_name, sel_dolly_idx, num_dolly) or "No Waypoints Stored"
-	_button(ctx, "selected_dolly_display", sel_dolly_label, cx_start + arrow_w + gap, y, selector_mid_w, 28, num_dolly > 0, function()
-		if num_dolly > 0 and mod.select_next_dolly_point then
-			mod.select_next_dolly_point()
+	local sel_dolly_label = num_dolly > 0 and string.format("Point %s (%d of %d)", pt_name, sel_dolly_idx, num_dolly)
+		or "No Waypoints Stored"
+	_button(
+		ctx,
+		"selected_dolly_display",
+		sel_dolly_label,
+		cx_start + arrow_w + gap,
+		y,
+		selector_mid_w,
+		28,
+		num_dolly > 0,
+		function()
+			if num_dolly > 0 and mod.select_next_dolly_point then
+				mod.select_next_dolly_point()
+			end
 		end
-	end)
+	)
 
-	_button(ctx, "next_dolly_point", ">", cx_start + arrow_w + gap + selector_mid_w + gap, y, arrow_w, 28, false, function()
-		if mod.select_next_dolly_point then
-			mod.select_next_dolly_point()
+	_button(
+		ctx,
+		"next_dolly_point",
+		">",
+		cx_start + arrow_w + gap + selector_mid_w + gap,
+		y,
+		arrow_w,
+		28,
+		false,
+		function()
+			if mod.select_next_dolly_point then
+				mod.select_next_dolly_point()
+			end
 		end
-	end)
+	)
 
-	_button(ctx, "delete_selected_dolly_point", "Delete", cx_start + arrow_w + gap + selector_mid_w + gap + arrow_w + gap, y, del_btn_w, 28, false, function()
-		if mod.delete_selected_dolly_point then
-			mod.delete_selected_dolly_point()
+	_button(
+		ctx,
+		"delete_selected_dolly_point",
+		"Delete",
+		cx_start + arrow_w + gap + selector_mid_w + gap + arrow_w + gap,
+		y,
+		del_btn_w,
+		28,
+		false,
+		function()
+			if mod.delete_selected_dolly_point then
+				mod.delete_selected_dolly_point()
+			end
 		end
-	end)
+	)
 	y = y + 34
 
 	_button(ctx, "dolly_goto_point", "Go to Point", cx_start, y, half_w, 28, false, function()
@@ -762,16 +1150,44 @@ local function _build_rigs_dolly(ctx, cx_start, cy_start, w)
 
 	if motion == "instant" or motion == "instant_loop" then
 		local time_inbetween = mod:get("dolly_time_inbetween") or 2.0
-		_slider(ctx, "dolly_time_inbetween", "Time Between", string.format("%.1f s", time_inbetween),
-			cx_start + half_w + 10, y, half_w, 28, 0.1, 10.0, time_inbetween, 0.1, 1, function(v)
-			mod:set("dolly_time_inbetween", v, true)
-		end)
+		_slider(
+			ctx,
+			"dolly_time_inbetween",
+			"Time Between",
+			string.format("%.1f s", time_inbetween),
+			cx_start + half_w + 10,
+			y,
+			half_w,
+			28,
+			0.1,
+			10.0,
+			time_inbetween,
+			0.1,
+			1,
+			function(v)
+				mod:set("dolly_time_inbetween", v, true)
+			end
+		)
 	else
 		local duration = mod:get("dolly_duration") or 8.0
-		_slider(ctx, "dolly_duration", "Duration", string.format("%.1f s", duration), cx_start + half_w + 10, y, half_w, 28,
-			2.0, 60.0, duration, 0.5, 1, function(v)
-			mod:set("dolly_duration", v, true)
-		end)
+		_slider(
+			ctx,
+			"dolly_duration",
+			"Duration",
+			string.format("%.1f s", duration),
+			cx_start + half_w + 10,
+			y,
+			half_w,
+			28,
+			2.0,
+			60.0,
+			duration,
+			0.5,
+			1,
+			function(v)
+				mod:set("dolly_duration", v, true)
+			end
+		)
 	end
 end
 
@@ -785,23 +1201,32 @@ local function _build_rigs_orbit(ctx, cx_start, cy_start, w)
 
 	local orbit_active = mod._orbit_active
 	local orbit_paused = mod._orbit_paused
-	_button(ctx, "toggle_orbit", orbit_active and "ORBIT: ACTIVE" or "ORBIT: OFF", cx_start, y, third_w, 30, orbit_active,
+	_button(
+		ctx,
+		"toggle_orbit",
+		orbit_active and "ORBIT: ACTIVE" or "ORBIT: OFF",
+		cx_start,
+		y,
+		third_w,
+		30,
+		orbit_active,
 		function()
 			mod.toggle_orbit()
-		end)
+		end
+	)
 	local play_label = (not orbit_active or orbit_paused) and "PLAY" or "PAUSE"
 	local play_active = orbit_active and not orbit_paused
-	_button(ctx, "orbit_pause", play_label, cx_start + third_w + 10, y, third_w, 30, play_active,
-		function()
-			mod.toggle_orbit_pause()
-		end)
+	_button(ctx, "orbit_pause", play_label, cx_start + third_w + 10, y, third_w, 30, play_active, function()
+		mod.toggle_orbit_pause()
+	end)
 	_button(ctx, "orbit_center", "Set Center (Cam)", cx_start + (third_w + 10) * 2, y, third_w, 30, false, function()
 		mod.orbit_set_center()
 	end)
 	y = y + 36
 
 	local target_mode = mod:get("orbit_target_mode") or "follow"
-	local follow_rot = (target_mode == "follow") or (target_mode == "character" and mod:get("orbit_follow_rotation") == true)
+	local follow_rot = (target_mode == "follow")
+		or (target_mode == "character" and mod:get("orbit_follow_rotation") == true)
 
 	local target_label
 	if target_mode == "custom" then
@@ -812,8 +1237,7 @@ local function _build_rigs_orbit(ctx, cx_start, cy_start, w)
 		target_label = "Target: CHAR"
 	end
 
-	_button(ctx, "orbit_target", target_label, cx_start, y, third_w, 28,
-		false, function()
+	_button(ctx, "orbit_target", target_label, cx_start, y, third_w, 28, false, function()
 		if target_mode == "custom" then
 			mod:set("orbit_target_mode", "follow", true)
 			mod:set("orbit_follow_rotation", true, true)
@@ -827,28 +1251,60 @@ local function _build_rigs_orbit(ctx, cx_start, cy_start, w)
 	end)
 
 	local facing = mod:get("orbit_facing") or "inward"
-	_button(ctx, "orbit_facing", facing == "outward" and "Facing: OUT" or "Facing: IN", cx_start + third_w + 10, y,
-		third_w, 28, false, function()
-		local next_f = facing == "inward" and "outward" or "inward"
-		mod:set("orbit_facing", next_f, true)
-	end)
+	_button(
+		ctx,
+		"orbit_facing",
+		facing == "outward" and "Facing: OUT" or "Facing: IN",
+		cx_start + third_w + 10,
+		y,
+		third_w,
+		28,
+		false,
+		function()
+			local next_f = facing == "inward" and "outward" or "inward"
+			mod:set("orbit_facing", next_f, true)
+		end
+	)
 
 	local dir = mod:get("orbit_direction") or "cw"
-	_button(ctx, "orbit_dir", dir == "ccw" and "Dir: CCW" or "Dir: CW", cx_start + (third_w + 10) * 2, y, third_w, 28,
-		false, function()
-		local next_d = dir == "cw" and "ccw" or "cw"
-		mod:set("orbit_direction", next_d, true)
-	end)
+	_button(
+		ctx,
+		"orbit_dir",
+		dir == "ccw" and "Dir: CCW" or "Dir: CW",
+		cx_start + (third_w + 10) * 2,
+		y,
+		third_w,
+		28,
+		false,
+		function()
+			local next_d = dir == "cw" and "ccw" or "cw"
+			mod:set("orbit_direction", next_d, true)
+		end
+	)
 	y = y + 36
 
 	_section_header(ctx.items, "CAMERA POSITION & MOTION", cx_start, y, w)
 	y = y + 24
 
 	local orbit_speed = mod:get("orbit_speed") or 15
-	_slider(ctx, "orbit_speed", "Orbit Speed", string.format("%d°/s", math.floor(orbit_speed + 0.5)), cx_start, y, w, 28,
-		1, 60, orbit_speed, 1, 0, function(v)
-		mod:set("orbit_speed", v, true)
-	end)
+	_slider(
+		ctx,
+		"orbit_speed",
+		"Orbit Speed",
+		string.format("%d°/s", math.floor(orbit_speed + 0.5)),
+		cx_start,
+		y,
+		w,
+		28,
+		1,
+		60,
+		orbit_speed,
+		1,
+		0,
+		function(v)
+			mod:set("orbit_speed", v, true)
+		end
+	)
 	y = y + 32
 
 	local cur_deg = math.floor((math.deg(mod._orbit_angle or 0) % 360) + 0.5) % 360
@@ -891,33 +1347,74 @@ local function _build_rigs_orbit(ctx, cx_start, cy_start, w)
 			angle_label = string.format("%d° (South-East)", cur_deg)
 		end
 	end
-	_slider(ctx, "orbit_angle", "Track Position", angle_label, cx_start, y, w, 28, 0, 360,
-		cur_deg, 1, 0, function(v)
+	_slider(ctx, "orbit_angle", "Track Position", angle_label, cx_start, y, w, 28, 0, 360, cur_deg, 1, 0, function(v)
 		mod._orbit_angle = math.rad(v % 360)
 		mod:set("orbit_angle", v % 360, true)
 	end)
 	y = y + 32
 
 	local orbit_radius = mod:get("orbit_radius") or 4.0
-	_slider(ctx, "orbit_radius", "Orbit Radius", string.format("%.1f m", orbit_radius), cx_start, y, w, 28, 1.0, 30.0,
-		orbit_radius, 0.5, 1, function(v)
-		mod:set("orbit_radius", v, true)
-	end)
+	_slider(
+		ctx,
+		"orbit_radius",
+		"Orbit Radius",
+		string.format("%.1f m", orbit_radius),
+		cx_start,
+		y,
+		w,
+		28,
+		1.0,
+		30.0,
+		orbit_radius,
+		0.5,
+		1,
+		function(v)
+			mod:set("orbit_radius", v, true)
+		end
+	)
 	y = y + 32
 
 	local orbit_height = mod:get("orbit_height") or 0.3
-	_slider(ctx, "orbit_height", "Orbit Height Offset", string.format("%+.1f m", orbit_height), cx_start, y, w, 28, -5.0,
-		5.0, orbit_height, 0.1, 1, function(v)
-		mod:set("orbit_height", v, true)
-	end)
+	_slider(
+		ctx,
+		"orbit_height",
+		"Orbit Height Offset",
+		string.format("%+.1f m", orbit_height),
+		cx_start,
+		y,
+		w,
+		28,
+		-5.0,
+		5.0,
+		orbit_height,
+		0.1,
+		1,
+		function(v)
+			mod:set("orbit_height", v, true)
+		end
+	)
 	y = y + 32
 
 	local orbit_pitch = mod:get("orbit_pitch") or 0
-	_slider(ctx, "orbit_pitch", "Orbit Pitch Angle", string.format("%+d°", orbit_pitch), cx_start, y, w, 28, -45,
-		45, orbit_pitch, 1, 0, function(v)
-		mod:set("orbit_pitch", v, true)
-		mod._orbit_pitch = v
-	end)
+	_slider(
+		ctx,
+		"orbit_pitch",
+		"Orbit Pitch Angle",
+		string.format("%+d°", orbit_pitch),
+		cx_start,
+		y,
+		w,
+		28,
+		-45,
+		45,
+		orbit_pitch,
+		1,
+		0,
+		function(v)
+			mod:set("orbit_pitch", v, true)
+			mod._orbit_pitch = v
+		end
+	)
 	y = y + 32
 
 	local orbit_side_offset = mod:get("orbit_side_offset") or 0.0
@@ -929,35 +1426,87 @@ local function _build_rigs_orbit(ctx, cx_start, cy_start, w)
 	else
 		side_label = string.format("Left (%.1f m)", orbit_side_offset)
 	end
-	_slider(ctx, "orbit_side_offset", "Orbit Shoulder Offset", side_label, cx_start, y, w, 28, -2.0,
-		2.0, orbit_side_offset, 0.1, 1, function(v)
-		mod:set("orbit_side_offset", v, true)
-	end)
+	_slider(
+		ctx,
+		"orbit_side_offset",
+		"Orbit Shoulder Offset",
+		side_label,
+		cx_start,
+		y,
+		w,
+		28,
+		-2.0,
+		2.0,
+		orbit_side_offset,
+		0.1,
+		1,
+		function(v)
+			mod:set("orbit_side_offset", v, true)
+		end
+	)
 	y = y + 36
 
 	_section_header(ctx.items, "DYNAMIC CAMERA GIVE", cx_start, y, w)
 	y = y + 24
 
 	local dynamic_give = mod:get("orbit_dynamic_give") ~= false
-	_button(ctx, "orbit_dynamic_give", dynamic_give and "Dynamic Give: ON" or "Dynamic Give: OFF", cx_start, y, w, 28, dynamic_give, function()
-		mod:set("orbit_dynamic_give", not dynamic_give, true)
-	end)
+	_button(
+		ctx,
+		"orbit_dynamic_give",
+		dynamic_give and "Dynamic Give: ON" or "Dynamic Give: OFF",
+		cx_start,
+		y,
+		w,
+		28,
+		dynamic_give,
+		function()
+			mod:set("orbit_dynamic_give", not dynamic_give, true)
+		end
+	)
 	y = y + 34
 
 	local slide_give = mod:get("orbit_slide_give") or 0.5
 	local slide_text = dynamic_give and string.format("%.0f%%", slide_give * 100) or "OFF"
-	_slider(ctx, "orbit_slide_give", "Slide & Crouch Give", slide_text, cx_start, y, w, 28, 0.0, 1.0,
-		slide_give, 0.05, 2, function(v)
-		mod:set("orbit_slide_give", v, true)
-	end)
+	_slider(
+		ctx,
+		"orbit_slide_give",
+		"Slide & Crouch Give",
+		slide_text,
+		cx_start,
+		y,
+		w,
+		28,
+		0.0,
+		1.0,
+		slide_give,
+		0.05,
+		2,
+		function(v)
+			mod:set("orbit_slide_give", v, true)
+		end
+	)
 	y = y + 32
 
 	local pitch_give = mod:get("orbit_pitch_give") or 0.35
 	local pitch_text = dynamic_give and string.format("%.0f%%", pitch_give * 100) or "OFF"
-	_slider(ctx, "orbit_pitch_give", "Look Tilt Give", pitch_text, cx_start, y, w, 28, 0.0, 1.0,
-		pitch_give, 0.05, 2, function(v)
-		mod:set("orbit_pitch_give", v, true)
-	end)
+	_slider(
+		ctx,
+		"orbit_pitch_give",
+		"Look Tilt Give",
+		pitch_text,
+		cx_start,
+		y,
+		w,
+		28,
+		0.0,
+		1.0,
+		pitch_give,
+		0.05,
+		2,
+		function(v)
+			mod:set("orbit_pitch_give", v, true)
+		end
+	)
 end
 
 local function _build_rigs_tab(ctx, cx_start, cy_start, w)
@@ -1029,10 +1578,10 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	local tab_w = math.floor((content_w - (num_tabs - 1) * tab_gap) / num_tabs)
 
 	local tabs = {
-		{ id = "camera",   label = "CAMERA" },
+		{ id = "camera", label = "CAMERA" },
 		{ id = "time_hud", label = "TIME & HUD" },
 		{ id = "lighting", label = "LIGHTING" },
-		{ id = "rigs",     label = "RIGS" },
+		{ id = "rigs", label = "RIGS" },
 	}
 
 	local test_wx = M.state.x or math.floor((screen_w - ww) / 2)
@@ -1102,8 +1651,11 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	local is_hover_close = cx and _point_in_rect(cx, cy, close_x, close_y, close_w, close_h)
 	local is_hover_lock = cx and _point_in_rect(cx, cy, lock_x, lock_y, lock_w, lock_h)
 	local is_hover_actions = cx and _point_in_rect(cx, cy, act_x, act_y, act_w, act_h)
-	local is_hover_title = cx and _point_in_rect(cx, cy, wx, wy, ww, title_h) and not is_hover_close and
-	not is_hover_lock and not is_hover_actions
+	local is_hover_title = cx
+		and _point_in_rect(cx, cy, wx, wy, ww, title_h)
+		and not is_hover_close
+		and not is_hover_lock
+		and not is_hover_actions
 	local is_hover_window = cx and _point_in_rect(cx, cy, wx, wy, ww, wh)
 
 	mod._menu_hovered = (is_hover_window and true or false) or (M.state.dragging ~= nil) or (M.state.pressed_id ~= nil)
@@ -1155,10 +1707,10 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 
 	local is_actions_allowed = mod._actions_allowed ~= false
 	local act_label = is_actions_allowed and "ACTIONS: ALLOWED" or "ACTIONS: BLOCKED"
-	local act_bg = is_actions_allowed and (is_hover_actions and colors.btn_active_hover or colors.btn_active_bg) or
-	(is_hover_actions and colors.btn_hover_bg or colors.btn_bg)
-	local act_border = is_actions_allowed and colors.btn_active_border or
-	(is_hover_actions and colors.btn_hover_border or colors.btn_border)
+	local act_bg = is_actions_allowed and (is_hover_actions and colors.btn_active_hover or colors.btn_active_bg)
+		or (is_hover_actions and colors.btn_hover_bg or colors.btn_bg)
+	local act_border = is_actions_allowed and colors.btn_active_border
+		or (is_hover_actions and colors.btn_hover_border or colors.btn_border)
 	local act_text = is_actions_allowed and colors.btn_active_text or colors.btn_text
 
 	_add_panel(items, act_x, act_y, act_w, act_h, act_bg, act_border, 1, 3)
@@ -1166,10 +1718,10 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 
 	local is_locked = mod._camera_locked ~= false
 	local lock_label = is_locked and "CAM: LOCKED" or "CAM: FREE"
-	local lock_bg = is_locked and (is_hover_lock and colors.btn_active_hover or colors.btn_active_bg) or
-	(is_hover_lock and colors.btn_hover_bg or colors.btn_bg)
-	local lock_border = is_locked and colors.btn_active_border or
-	(is_hover_lock and colors.btn_hover_border or colors.btn_border)
+	local lock_bg = is_locked and (is_hover_lock and colors.btn_active_hover or colors.btn_active_bg)
+		or (is_hover_lock and colors.btn_hover_bg or colors.btn_bg)
+	local lock_border = is_locked and colors.btn_active_border
+		or (is_hover_lock and colors.btn_hover_border or colors.btn_border)
 	local lock_text = is_locked and colors.btn_active_text or colors.btn_text
 
 	_add_panel(items, lock_x, lock_y, lock_w, lock_h, lock_bg, lock_border, 1, 3)
@@ -1233,8 +1785,16 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 	local prof_y = collapsed and (footer_line_y - 28) or (footer_line_y - M.PROFILE_BLOCK_HEIGHT + 18)
 	_add_text(items, "PROFILES", wx + pad_x, prof_y - 2, 90, 18, 14, colors.section_header, "left", 2)
 	_add_rect(items, wx + pad_x, prof_y + 19, content_w, 1, colors.section_line, 2)
-	_button(ctx, "profile_collapse", collapsed and "SHOW" or "HIDE", wx + pad_x + 60, prof_y - 3, 50, 20,
-		false, function()
+	_button(
+		ctx,
+		"profile_collapse",
+		collapsed and "SHOW" or "HIDE",
+		wx + pad_x + 60,
+		prof_y - 3,
+		50,
+		20,
+		false,
+		function()
 			M.state.profiles_collapsed = not M.state.profiles_collapsed
 			M.state.confirm_kind = nil
 			M.state.confirm_slot = nil
@@ -1243,7 +1803,8 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 				M.state.rename_slot = nil
 			end
 			mod:set("profiles_collapsed", M.state.profiles_collapsed)
-		end)
+		end
+	)
 	prof_y = prof_y + 28
 
 	if collapsed then
@@ -1296,8 +1857,16 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 					label = label .. "*"
 				end
 			end
-			_button(ctx, "profile_slot_" .. n, label, wx + pad_x + (n - 1) * (slot_w + slot_gap), prof_y, slot_w, 28,
-				sel == n, function()
+			_button(
+				ctx,
+				"profile_slot_" .. n,
+				label,
+				wx + pad_x + (n - 1) * (slot_w + slot_gap),
+				prof_y,
+				slot_w,
+				28,
+				sel == n,
+				function()
 					local now = Application.time_since_launch()
 					if M.state.last_slot_click == n and now - (M.state.last_slot_click_t or 0) < 0.4 then
 						M.state.rename_slot = n
@@ -1308,7 +1877,8 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 					M.state.profile_sel = n
 					M.state.confirm_kind = nil
 					M.state.confirm_slot = nil
-				end)
+				end
+			)
 		end
 		prof_y = prof_y + 38
 		local pbtn_w = math.floor((content_w - 24) / 3)
@@ -1328,8 +1898,16 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 			hover_border = { 255, 230, 80, 90 },
 		}
 
-		_button(ctx, "profile_save", confirm_save and "OVERWRITE SLOT?" or "SAVE TO SLOT", wx + pad_x, prof_y, pbtn_w, 28,
-			false, function()
+		_button(
+			ctx,
+			"profile_save",
+			confirm_save and "OVERWRITE SLOT?" or "SAVE TO SLOT",
+			wx + pad_x,
+			prof_y,
+			pbtn_w,
+			28,
+			false,
+			function()
 				if confirm_save or not mod.profile_exists(sel) then
 					mod.save_profile(sel)
 					M.state.confirm_kind = nil
@@ -1339,14 +1917,24 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 					M.state.confirm_slot = sel
 					M.state.confirm_t = now
 				end
-			end, confirm_save and confirm_colors or nil)
+			end,
+			confirm_save and confirm_colors or nil
+		)
 		_button(ctx, "profile_load", "LOAD SLOT", wx + pad_x + pbtn_w + 12, prof_y, pbtn_w, 28, false, function()
 			M.state.confirm_kind = nil
 			M.state.confirm_slot = nil
 			mod.load_profile(sel)
 		end)
-		_button(ctx, "profile_delete", confirm_delete and "CONFIRM DELETE?" or "DELETE SLOT",
-			wx + pad_x + (pbtn_w + 12) * 2, prof_y, pbtn_w, 28, false, function()
+		_button(
+			ctx,
+			"profile_delete",
+			confirm_delete and "CONFIRM DELETE?" or "DELETE SLOT",
+			wx + pad_x + (pbtn_w + 12) * 2,
+			prof_y,
+			pbtn_w,
+			28,
+			false,
+			function()
 				if confirm_delete then
 					mod.delete_profile(sel)
 					M.state.confirm_kind = nil
@@ -1356,7 +1944,9 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 					M.state.confirm_slot = sel
 					M.state.confirm_t = now
 				end
-			end, confirm_delete and confirm_colors or nil)
+			end,
+			confirm_delete and confirm_colors or nil
+		)
 	end
 
 	local footer_gap = 12
@@ -1406,11 +1996,18 @@ function M.draw(element, ui_renderer, render_settings)
 	end
 
 	local text_options = {
-		center = UIFonts.get_font_options_by_style({ text_horizontal_alignment = "center", text_vertical_alignment =
-		"center" }),
-		left = UIFonts.get_font_options_by_style({ text_horizontal_alignment = "left", text_vertical_alignment = "center" }),
-		right = UIFonts.get_font_options_by_style({ text_horizontal_alignment = "right", text_vertical_alignment =
-		"center" }),
+		center = UIFonts.get_font_options_by_style({
+			text_horizontal_alignment = "center",
+			text_vertical_alignment = "center",
+		}),
+		left = UIFonts.get_font_options_by_style({
+			text_horizontal_alignment = "left",
+			text_vertical_alignment = "center",
+		}),
+		right = UIFonts.get_font_options_by_style({
+			text_horizontal_alignment = "right",
+			text_vertical_alignment = "center",
+		}),
 	}
 
 	local base_layer = M.LAYER
