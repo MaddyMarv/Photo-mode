@@ -97,16 +97,16 @@ mod._hide_outlines = mod:get("hide_outlines") or false
 
 mod._shared = {}
 
-mod:io_dofile("photo_mode/scripts/mods/photo_mode/core")
-mod:io_dofile("photo_mode/scripts/mods/photo_mode/lights")
-mod:io_dofile("photo_mode/scripts/mods/photo_mode/resets")
-mod:io_dofile("photo_mode/scripts/mods/photo_mode/profiles")
-mod:io_dofile("photo_mode/scripts/mods/photo_mode/actions")
-mod:io_dofile("photo_mode/scripts/mods/photo_mode/dolly")
-mod:io_dofile("photo_mode/scripts/mods/photo_mode/orbit")
-mod:io_dofile("photo_mode/scripts/mods/photo_mode/input")
-mod:io_dofile("photo_mode/scripts/mods/photo_mode/hooks")
-mod:io_dofile("photo_mode/scripts/mods/photo_mode/replays")
+mod:io_dofile("photo_mode/scripts/mods/photo_mode/helpers/core")
+mod:io_dofile("photo_mode/scripts/mods/photo_mode/features/lights")
+mod:io_dofile("photo_mode/scripts/mods/photo_mode/features/resets")
+mod:io_dofile("photo_mode/scripts/mods/photo_mode/features/profiles")
+mod:io_dofile("photo_mode/scripts/mods/photo_mode/features/actions")
+mod:io_dofile("photo_mode/scripts/mods/photo_mode/features/dolly")
+mod:io_dofile("photo_mode/scripts/mods/photo_mode/features/orbit")
+mod:io_dofile("photo_mode/scripts/mods/photo_mode/helpers/input")
+mod:io_dofile("photo_mode/scripts/mods/photo_mode/hooks/game_hooks")
+mod:io_dofile("photo_mode/scripts/mods/photo_mode/compatibility/replays")
 
 local Shared = mod._shared
 local _apply_light_settings = Shared._apply_light_settings
