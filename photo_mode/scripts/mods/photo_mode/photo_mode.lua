@@ -429,35 +429,6 @@ local function _get_camera_transform()
 	return pos, rot
 end
 
-local function _get_current_fov()
-	local world = _get_level_world()
-
-	if world then
-		local ff_viewport = ScriptWorld.global_free_flight_viewport and ScriptWorld.global_free_flight_viewport(world)
-
-		if ff_viewport then
-			local cam = ScriptViewport.camera(ff_viewport)
-
-			if cam then
-				return math.floor(math.deg(Camera.vertical_fov(cam)) + 0.5)
-			end
-		end
-	end
-
-	local player = _get_local_player()
-
-	if player and Managers.state.camera then
-		local camera_manager = Managers.state.camera
-		local viewport_name = player.viewport_name
-
-		if viewport_name and camera_manager:has_viewport(viewport_name) then
-			return math.floor(math.deg(camera_manager:fov(viewport_name)) + 0.5)
-		end
-	end
-
-	return 65
-end
-
 local function _set_time_scale(scale)
 	if Managers.time and Managers.time:has_timer("gameplay") then
 		Managers.time:set_local_scale("gameplay", scale)
@@ -688,43 +659,6 @@ local function _reset_time_state()
 	_set_world_paused(false)
 	_set_time_scale(1.0)
 	_sync_replay_clock_scale()
-end
-
-local function _reset_hud_state()
-	mod._hud_hidden = false
-	mod._chat_hidden = false
-
-	local replays = get_mod("Replays")
-	local RUI = replays and replays.rec and replays.rec.ui
-	if RUI then
-		RUI.hud_hidden = false
-	end
-
-	if mod._screen_effects_hidden then
-		mod._screen_effects_hidden = false
-		local player = _get_local_player()
-		local camera_handler = player and player.camera_handler
-		local mood_handler = camera_handler and camera_handler._mood_handler
-		if mood_handler and mood_handler._current_moods_status then
-			for mood_type, _ in pairs(mood_handler._current_moods_status) do
-				mood_handler._current_moods_status[mood_type] = MoodSettings.status.inactive
-			end
-		end
-	end
-
-	mod._arms_pending = false
-	if mod._arms_hidden then
-		mod._set_arms_visibility(true)
-		mod._arms_hidden = false
-	end
-
-	local hud = Managers.ui and Managers.ui._hud
-	if hud then
-		hud._current_group_name = nil
-		if hud._update_element_visibility then
-			hud:_update_element_visibility()
-		end
-	end
 end
 
 local function _apply_outlines_visibility(visible)
@@ -1280,7 +1214,7 @@ mod.set_in_game_actions = function(allowed)
 end
 
 mod.toggle_in_game_actions = function()
-	mod:set("allow_in_game_actions", not (mod:get("allow_in_game_actions") ~= false), true)
+	mod:set("allow_in_game_actions", mod:get("allow_in_game_actions") == false, true)
 end
 
 mod.set_freeze_time = function(enabled)
@@ -2526,7 +2460,7 @@ mod.restore_all_extinguished_lights = function(silent)
 end
 
 mod.toggle_map_lights = function()
-	mod:set("map_lights", not (mod:get("map_lights") ~= false), true)
+	mod:set("map_lights", mod:get("map_lights") == false, true)
 end
 mod.toggle_blackout = mod.toggle_map_lights
 mod.toggle_blackout_zone = mod.toggle_map_lights

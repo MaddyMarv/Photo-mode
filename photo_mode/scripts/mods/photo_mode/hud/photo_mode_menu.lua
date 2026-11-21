@@ -224,7 +224,6 @@ local function _slider(
 )
 	local track_y = y + 17
 	local track_h = 10
-	local is_hover = ctx.cx and _point_in_rect(ctx.cx, ctx.cy, x, y, w, h)
 	local colors = M.COLORS
 
 	_add_text(ctx.items, label, x, y, w - 80, 15, 13, colors.slider_label, "left", 2)
@@ -722,7 +721,6 @@ local function _build_lighting_tab(ctx, cx_start, cy_start, w)
 	)
 	y = y + 34
 
-	local half_btn_w = math.floor((w - 10) / 2)
 	local lantern_active = mod._lantern_active
 	_button(
 		ctx,
@@ -1193,7 +1191,6 @@ end
 
 local function _build_rigs_orbit(ctx, cx_start, cy_start, w)
 	local y = cy_start
-	local half_w = math.floor((w - 10) / 2)
 	local third_w = math.floor((w - 20) / 3)
 
 	_section_header(ctx.items, "ORBIT CONTROLS & TARGET", cx_start, y, w)
@@ -1668,7 +1665,7 @@ function M.update(element, dt, t, ui_renderer, render_settings, input_service)
 			element._menu_items = nil
 			return
 		elseif is_hover_lock then
-			mod._camera_locked = not (mod._camera_locked ~= false)
+			mod._camera_locked = mod._camera_locked == false
 			mod:set("lock_camera_in_menu", mod._camera_locked, true)
 		elseif is_hover_actions then
 			mod.toggle_in_game_actions()
