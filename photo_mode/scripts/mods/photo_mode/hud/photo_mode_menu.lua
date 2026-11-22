@@ -13,7 +13,7 @@ M.PROFILE_EXTRA_HEIGHT = 88
 M.PROFILE_COLLAPSE_SHRINK = 74
 M.TAB_HEIGHTS = {
 	time_hud = 370 + M.PROFILE_EXTRA_HEIGHT + 12,
-	camera = 555 + M.PROFILE_EXTRA_HEIGHT,
+	camera = 625 + M.PROFILE_EXTRA_HEIGHT,
 	rigs = 385 + M.PROFILE_EXTRA_HEIGHT,
 	lighting = 660 + M.PROFILE_EXTRA_HEIGHT,
 }
@@ -424,7 +424,7 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 	)
 	y = y + 34
 
-	_section_header(ctx.items, "MOUSE LOOK SMOOTHING", cx_start, y, w)
+	_section_header(ctx.items, "LOOK & MOVEMENT", cx_start, y, w)
 	y = y + 24
 
 	local mouse_smoothing = mod._mouse_smoothing
@@ -483,6 +483,59 @@ local function _build_camera_tab(ctx, cx_start, cy_start, w)
 		function(v)
 			mod:set("mouse_smoothing_speed", v, true)
 			mod._mouse_smoothing_speed = v
+		end
+	)
+	y = y + 36
+
+	local move_speed_enabled = mod._move_speed_enabled
+	_button(
+		ctx,
+		"toggle_move_speed",
+		move_speed_enabled and "MOVE SPEED: ON" or "MOVE SPEED: OFF",
+		cx_start,
+		y + 1,
+		half_w,
+		28,
+		move_speed_enabled,
+		function()
+			mod.toggle_move_speed()
+		end
+	)
+
+	local move_spd = mod._move_speed or mod:get("free_flight_move_speed") or 1.0
+	_slider(
+		ctx,
+		"free_flight_move_speed",
+		"Move Speed",
+		string.format("%d%%", math.floor(move_spd * 100 + 0.5)),
+		cx_start + half_w + 10,
+		y,
+		half_w,
+		30,
+		0.05,
+		1.00,
+		move_spd,
+		0.05,
+		2,
+		function(v)
+			mod:set("free_flight_move_speed", v, true)
+			mod._move_speed = v
+		end
+	)
+	y = y + 36
+
+	local lock_character = mod._lock_character == true
+	_button(
+		ctx,
+		"lock_character",
+		lock_character and "LOCK CHARACTER: ON" or "LOCK CHARACTER: OFF",
+		cx_start,
+		y,
+		w,
+		28,
+		lock_character,
+		function()
+			mod.toggle_lock_character()
 		end
 	)
 end

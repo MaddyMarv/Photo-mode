@@ -357,7 +357,7 @@ return {
 		en = "Focus Distance",
 	},
 	mouse_smoothing_settings = {
-		en = "Mouse Look Smoothing",
+		en = "Look & Movement",
 	},
 	mouse_smoothing = {
 		en = "Mouse Smoothing",
@@ -382,6 +382,48 @@ return {
 	},
 	mouse_smoothing_speed_description = {
 		en = "Look speed while smoothing.",
+	},
+	free_flight_move_speed_enabled = {
+		en = "Move Speed",
+	},
+	free_flight_move_speed_enabled_description = {
+		en = "Slows free flight movement.",
+	},
+	toggle_move_speed = {
+		en = "Move Speed Keybind",
+	},
+	toggle_move_speed_description = {
+		en = "Hotkey to toggle move speed.",
+	},
+	free_flight_move_speed = {
+		en = "Move Speed Amount",
+	},
+	free_flight_move_speed_description = {
+		en = "How fast free flight moves.",
+	},
+	msg_move_speed_on = {
+		en = "Move Speed: Active",
+	},
+	msg_move_speed_off = {
+		en = "Move Speed: Inactive",
+	},
+	lock_character = {
+		en = "Lock Character",
+	},
+	lock_character_description = {
+		en = "Stops your character from moving or turning.",
+	},
+	toggle_lock_character = {
+		en = "Lock Character Keybind",
+	},
+	toggle_lock_character_description = {
+		en = "Hotkey to toggle lock character.",
+	},
+	msg_character_locked = {
+		en = "Character Locked: On",
+	},
+	msg_character_unlocked = {
+		en = "Character Locked: Off",
 	},
 	msg_mouse_smoothing_on = {
 		en = "Mouse Smoothing: Active",

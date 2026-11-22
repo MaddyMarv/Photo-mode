@@ -18,6 +18,8 @@ mod.reset_tab_camera = function(silent)
 	mod:set("camera_fov_offset", 0)
 	mod._lock_fov = false
 	mod:set("lock_fov", false)
+	mod._lock_character = false
+	mod:set("lock_character", false)
 
 	local world = _get_level_world()
 	if world then
@@ -48,6 +50,11 @@ mod.reset_tab_camera = function(silent)
 	mod:set("mouse_smoothing_amount", 0.65)
 	mod._mouse_smoothing_speed = 1.0
 	mod:set("mouse_smoothing_speed", 1.0)
+	if mod._move_speed_enabled then
+		mod.set_move_speed_enabled(false)
+	end
+	mod._move_speed = 1.0
+	mod:set("free_flight_move_speed", 1.0)
 	mod._reset_mouse_smoothing()
 
 	if not was_silent then

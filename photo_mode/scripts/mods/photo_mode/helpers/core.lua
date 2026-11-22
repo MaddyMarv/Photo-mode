@@ -30,48 +30,10 @@ local function _is_replay_active()
 	return nil
 end
 
-local function _get_spectated_puppet_unit()
-	local replays = get_mod("Replays")
-	local P = replays and replays.rec and replays.rec.puppets
-	local PLAY = replays and replays.rec and replays.rec.playback
-	if not P or not PLAY then
-		return nil
-	end
-
-	local eid = PLAY.follow_eid or (PLAY.pov and PLAY.pov.eid)
-	if eid and P.puppets and P.puppets[eid] then
-		local p = P.puppets[eid]
-		local unit = p.unit or (type(p) == "userdata" and p)
-		if unit and Unit.alive(unit) then
-			return unit
-		end
-	end
-
-	local SP = replays.rec.spectate
-	if SP and eid and SP.unit_for then
-		local unit = SP.unit_for(eid)
-		if unit and Unit.alive(unit) then
-			return unit
-		end
-	end
-
-	if PLAY.resolve_local_unit then
-		local runit = PLAY.resolve_local_unit()
-		if runit and Unit.alive(runit) then
-			return runit
-		end
-	end
-
-	if PLAY.local_unit and Unit.alive(PLAY.local_unit) then
-		return PLAY.local_unit
-	end
-
-	return nil
-end
-
 local function _ensure_replay_free_cam(seed_pos, seed_rot)
 	local PLAY = _is_replay_active()
 	if PLAY and PLAY.pov_mode ~= "free" and PLAY.set_pov then
+		mod._replay_follow_eid = PLAY.pov_mode == "follow" and PLAY.follow_eid or nil
 		PLAY.set_pov("free")
 		if seed_pos and seed_rot and PLAY.viewport_world then
 			local viewport = ScriptWorld.global_free_flight_viewport(PLAY.viewport_world)
@@ -151,6 +113,48 @@ local function _get_local_player(player_manager)
 	local connection_manager = Managers.connection
 	if connection_manager and connection_manager.is_initialized and connection_manager:is_initialized() then
 		return pm:local_player(1)
+	end
+
+	return nil
+end
+
+local function _get_spectated_puppet_unit()
+	local PLAY = _is_replay_active()
+	if not PLAY then
+		local player = _get_local_player()
+		local handler = player and player.camera_handler
+		local unit = handler and handler:camera_follow_unit()
+		return (unit and Unit.alive(unit)) and unit or nil
+	end
+
+	local replays = get_mod("Replays")
+	local P = replays.rec.puppets
+	local eid = PLAY.follow_eid or mod._replay_follow_eid or (PLAY.pov and PLAY.pov.eid)
+	if eid and P and P.puppets and P.puppets[eid] then
+		local p = P.puppets[eid]
+		local unit = p.unit or (type(p) == "userdata" and p)
+		if unit and Unit.alive(unit) then
+			return unit
+		end
+	end
+
+	local SP = replays.rec.spectate
+	if SP and eid and SP.unit_for then
+		local unit = SP.unit_for(eid)
+		if unit and Unit.alive(unit) then
+			return unit
+		end
+	end
+
+	if PLAY.resolve_local_unit then
+		local runit = PLAY.resolve_local_unit()
+		if runit and Unit.alive(runit) then
+			return runit
+		end
+	end
+
+	if PLAY.local_unit and Unit.alive(PLAY.local_unit) then
+		return PLAY.local_unit
 	end
 
 	return nil
@@ -497,6 +501,7 @@ local function _cleanup_all(keep_orbit)
 	mod._orbit_center = nil
 
 	if not can_persist_orbit then
+		mod._replay_follow_eid = nil
 		mod._orbit_active = false
 		mod._orbit_paused = true
 		if not is_char then
@@ -514,6 +519,8 @@ local function _cleanup_all(keep_orbit)
 
 	mod:set("freeze_time", false)
 	mod:set("slomo_active", false)
+	mod._lock_character = false
+	mod:set("lock_character", false)
 	mod:set("tripod_active", false)
 	mod:set("dolly_active", false)
 

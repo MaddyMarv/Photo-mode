@@ -76,6 +76,11 @@ To do:
 - Mouse Smoothing (Hotkey)
 - Smoothing Strength
 - Smoothing Look Speed
+- Move Speed
+- Move Speed (Hotkey)
+- Move Speed Amount
+- Lock Character
+- Lock Character (Hotkey)
 
 **Lighting Controls**
 - Place Light (Hotkey)

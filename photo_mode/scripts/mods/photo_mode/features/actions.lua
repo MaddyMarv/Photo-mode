@@ -463,6 +463,13 @@ mod.toggle_lock_fov = function()
 	mod:set("lock_fov", not mod:get("lock_fov"), true)
 end
 
+mod.toggle_lock_character = function()
+	if not mod:is_enabled() then
+		return
+	end
+	mod:set("lock_character", not mod:get("lock_character"), true)
+end
+
 mod.tilt_left = function()
 	if not mod:is_enabled() then
 		return
@@ -638,6 +645,23 @@ end
 
 mod.toggle_mouse_smoothing = function()
 	mod:set("mouse_smoothing", not mod:get("mouse_smoothing"), true)
+end
+
+mod.set_move_speed_enabled = function(enabled)
+	if not mod:is_enabled() then
+		return
+	end
+
+	mod._move_speed_enabled = enabled
+	mod:set("free_flight_move_speed_enabled", enabled)
+
+	if not mod._silent_reset then
+		mod:echo(mod:localize(enabled and "msg_move_speed_on" or "msg_move_speed_off"))
+	end
+end
+
+mod.toggle_move_speed = function()
+	mod:set("free_flight_move_speed_enabled", not mod:get("free_flight_move_speed_enabled"), true)
 end
 
 Shared._guard_hotkeys_while_typing = _guard_hotkeys_while_typing

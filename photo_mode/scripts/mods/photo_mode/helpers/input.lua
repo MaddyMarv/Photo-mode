@@ -74,6 +74,16 @@ mod:hook("FreeFlightDefaultInput", "null_service", function(func, self)
 	return _safe_ff_null_service
 end)
 
+local _ff_move_actions = {
+	move_right = true,
+	move_left = true,
+	move_forward = true,
+	move_backward = true,
+	move_up = true,
+	move_down = true,
+	move_controller = true,
+}
+
 local _ff_current_input = nil
 local _ff_current_dt = 0.016
 local _ff_input_proxy = {}
@@ -100,7 +110,7 @@ function _ff_input_proxy:get(action_name, ...)
 		return false
 	end
 
-	if action_name == "look" then
+	if action_name == "look" and mod._mouse_smoothing then
 		local raw_look = _ff_current_input:get("look", ...)
 		local smoothed_look, new_x, new_y = _calculate_smoothed_look(
 			raw_look,
@@ -115,7 +125,12 @@ function _ff_input_proxy:get(action_name, ...)
 		return smoothed_look
 	end
 
-	return _ff_current_input:get(action_name, ...)
+	local val = _ff_current_input:get(action_name, ...)
+	if val and _ff_move_actions[action_name] then
+		return val * (mod._move_speed_enabled and mod._move_speed or 1.0)
+	end
+
+	return val
 end
 
 function _ff_input_proxy:null_service()

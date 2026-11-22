@@ -119,6 +119,14 @@ mod:hook("HumanUnitInput", "get", function(func, self, action, ...)
 	return func(self, action, ...)
 end)
 
+mod:hook("HumanGameplay", "_get_input", function(func, self)
+	local input = func(self)
+	if mod._lock_character then
+		return input:null_service()
+	end
+	return input
+end)
+
 mod:hook("InputManager", "pop_cursor", function(func, self, reference)
 	local cursor_stack_data = self._cursor_stack_data
 	if cursor_stack_data then
@@ -362,7 +370,7 @@ mod:hook("FreeFlightManager", "_update_camera", function(func, self, input, dt, 
 		return
 	end
 
-	if input and mod:is_enabled() and mod._mouse_smoothing then
+	if input and mod:is_enabled() and (mod._mouse_smoothing or (mod._move_speed_enabled and mod._move_speed ~= 1)) then
 		input = _wrap_freeflight_input(input, dt)
 	end
 

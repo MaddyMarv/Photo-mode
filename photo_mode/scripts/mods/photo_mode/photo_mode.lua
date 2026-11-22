@@ -52,6 +52,7 @@ mod._exposure_was_applied = false
 
 mod._fov_offset = mod:get("camera_fov_offset") or 0
 mod._lock_fov = mod:get("lock_fov") or false
+mod._lock_character = false
 mod._tilt_angle = mod:get("camera_tilt") or 0
 mod._dof_active = mod:get("dof_active") or false
 mod._dof_distance = mod:get("dof_focal_distance") or 3.0
@@ -60,6 +61,8 @@ mod._original_render_dof = nil
 mod._mouse_smoothing = mod:get("mouse_smoothing") or false
 mod._mouse_smoothing_amount = mod:get("mouse_smoothing_amount") or 0.65
 mod._mouse_smoothing_speed = mod:get("mouse_smoothing_speed") or 1.0
+mod._move_speed_enabled = mod:get("free_flight_move_speed_enabled") or false
+mod._move_speed = mod:get("free_flight_move_speed") or 1.0
 
 mod._tripod_active = false
 mod._tripod_pos = nil
@@ -585,6 +588,14 @@ mod.on_setting_changed = function(setting_id)
 				mod:echo(mod:localize(mod._lock_fov and "msg_fov_locked" or "msg_fov_unlocked"))
 			end
 		end
+	elseif setting_id == "lock_character" then
+		local val = mod:get("lock_character") == true
+		if val ~= mod._lock_character then
+			mod._lock_character = val
+			if not mod._silent_reset then
+				mod:echo(mod:localize(val and "msg_character_locked" or "msg_character_unlocked"))
+			end
+		end
 	elseif setting_id == "hide_outlines" then
 		local val = mod:get("hide_outlines") == true
 		if val ~= mod._hide_outlines then
@@ -619,6 +630,13 @@ mod.on_setting_changed = function(setting_id)
 		mod._mouse_smoothing_amount = mod:get("mouse_smoothing_amount") or 0.65
 	elseif setting_id == "mouse_smoothing_speed" then
 		mod._mouse_smoothing_speed = mod:get("mouse_smoothing_speed") or 1.0
+	elseif setting_id == "free_flight_move_speed_enabled" then
+		local val = mod:get("free_flight_move_speed_enabled")
+		if val ~= mod._move_speed_enabled then
+			mod.set_move_speed_enabled(val)
+		end
+	elseif setting_id == "free_flight_move_speed" then
+		mod._move_speed = mod:get("free_flight_move_speed") or 1.0
 	elseif setting_id == "map_lights" or setting_id == "blackout_active" then
 		local lights_on = mod:get("map_lights") ~= false
 		local should_be_blackout = not lights_on

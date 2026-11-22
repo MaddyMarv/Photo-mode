@@ -130,6 +130,14 @@ local function _setup_replays_integration()
 		end
 	end)
 
+	_hook_play("free_cam_step_speed", function(func, ...)
+		local speed = func(...)
+		if mod:is_enabled() and mod._move_speed_enabled and speed then
+			return speed * (mod._move_speed or 1.0)
+		end
+		return speed
+	end)
+
 	_hook_play("speed", function(func)
 		if mod:is_enabled() and PLAY.state == "playing" and not PLAY.at_end then
 			if mod._step_frames_remaining and mod._step_frames_remaining > 0 then

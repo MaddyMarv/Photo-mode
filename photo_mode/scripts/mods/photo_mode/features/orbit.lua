@@ -194,6 +194,7 @@ mod.set_orbit_active = function(enabled)
 	else
 		mod._orbit_active = false
 		mod._orbit_paused = true
+		mod._replay_follow_eid = nil
 		mod._orbit_pos = nil
 		mod._orbit_rot = nil
 		mod._orbit_smooth_center = nil
