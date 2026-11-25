@@ -14,14 +14,16 @@ To do:
 
 [b]Mod Settings / Commands:[/b]
 [spoiler]
-[b]Photo Mode In-Game Menu[/b]
+[b]Menu[/b]
 - Photo Mode Menu (Hotkey)
 - Chat Notifications
 - Lock Camera in Menu
 - Allow In-Game Actions
 - Toggle In-Game Actions (Hotkey)
 
-[b]Time Control[/b]
+[b]Time & HUD[/b]
+
+[i]Time Control[/i]
 - Freeze Time
 - Freeze Time (Hotkey)
 - Step 1 Frame (Hotkey)
@@ -31,7 +33,7 @@ To do:
 - Slow Down Slow-Mo (Hotkey)
 - Slow-Mo Speed
 
-[b]HUD & Visibility[/b]
+[i]HUD & Visibility[/i]
 - Hide HUD
 - Hide HUD (Hotkey)
 - Hide Chat
@@ -43,22 +45,23 @@ To do:
 - Hide All Outlines
 - Toggle Outlines (Hotkey)
 
-[b]Lens Zoom / FOV[/b]
-- Enable Lens Zoom / FOV Override
+[b]Camera & Optics[/b]
+
+[i]Lens Zoom / FOV[/i]
+- FOV Offset
 - Zoom In (Hotkey)
 - Zoom Out (Hotkey)
 - Reset FOV (Hotkey)
-- Camera FOV
 - Lock FOV
 - Toggle Lock FOV (Hotkey)
 
-[b]Dutch Angle / Tilt[/b]
+[i]Dutch Angle / Tilt[/i]
+- Camera Tilt
 - Tilt Left (Hotkey)
 - Tilt Right (Hotkey)
 - Reset Tilt (Hotkey)
-- Camera Tilt
 
-[b]Depth of Field (DOF)[/b]
+[i]Depth of Field (DOF)[/i]
 - Depth of Field
 - Depth of Field (Hotkey)
 - Focus Further (Hotkey)
@@ -67,7 +70,7 @@ To do:
 - Focus Region
 - Blur Amount
 
-[b]Mouse Look Smoothing[/b]
+[i]Look & Movement[/i]
 - Mouse Smoothing
 - Mouse Smoothing (Hotkey)
 - Smoothing Strength
@@ -78,7 +81,9 @@ To do:
 - Lock Character
 - Lock Character (Hotkey)
 
-[b]Lighting Controls[/b]
+[b]Studio Lighting[/b]
+
+[i]Lighting Controls[/i]
 - Place Light (Hotkey)
 - Undo Light (Hotkey)
 - Delete Selected Light (Hotkey)
@@ -88,26 +93,27 @@ To do:
 - Lantern Light
 - Lantern (Hotkey)
 
-[b]Map Lights & Exposure[/b]
-- Map Lights (Toggle)
-- Toggle Map Lights (Hotkey)
-- Scene Exposure
-
-[b]Light Properties[/b]
-- Light Type [Spotlight, Omni]
+[i]Light Properties[/i]
+- Light Type [Spotlight, Omni (Point Light)]
 - Light Color
 - Light Brightness
 - Light Distance
 - Spotlight Angle
 - Cast Shadows
 
+[i]Map Lights & Exposure[/i]
+- Map Lights
+- Toggle Map Lights (Hotkey)
+- Scene Exposure
+
 [b]Camera Rigs[/b]
-[b]Tripod Rig[/b]
+
+[i]Tripod Rig (Static)[/i]
 - Tripod Lock
 - Tripod (Hotkey)
 
-[b]Dolly Track Rig[/b]
-- Dolly Track Toggle
+[i]Dolly Track (Waypoints)[/i]
+- Dolly Track
 - Play/Stop Dolly (Hotkey)
 - Add Waypoint (Hotkey)
 - Undo Waypoint (Hotkey)
@@ -117,20 +123,20 @@ To do:
 - Next Waypoint (Hotkey)
 - Go to Waypoint (Hotkey)
 - Update Waypoint (Hotkey)
-- Dolly Duration (Seconds)
-- Time Between Points (Seconds)
+- Dolly Duration
+- Time Between Points
 - Dolly Motion [Smooth Ease, Linear, Ping-Pong Loop, Instant Cut, Instant Loop]
 
-[b]Orbit Camera Rig[/b]
-- Orbit Rig Toggle
+[i]Orbit Rig (Circular)[/i]
+- Orbit Rig
 - Dynamic Give
-- Slide & Crouch Give
+- Slide Give
 - Look Tilt Give
 - Toggle Orbit (Hotkey)
 - Play/Pause Orbit (Hotkey)
 - Set Orbit Center (Hotkey)
-- Orbit Target [Follow, Character, Recorded Point]
-- Camera Facing [Inward, Outward]
+- Orbit Target [Follow Character, Static Character, Recorded Point]
+- Camera Facing [Inward (Subject), Outward (Panorama)]
 - Orbit Speed
 - Track Position
 - Orbit Distance
